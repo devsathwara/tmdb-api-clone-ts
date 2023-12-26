@@ -98,3 +98,25 @@ export const createMovies = async (data: any[]): Promise<void> => {
     throw error;
   }
 };
+
+export const getMoviesbyPage = async (pageNumber: any): Promise<any> => {
+  if (pageNumber == 1) {
+    const movies = await db
+      .selectFrom("movies-info")
+      .selectAll()
+      .orderBy("id")
+      .limit(20)
+      .execute();
+    return movies;
+  }
+  const limit: any = 20;
+  let offset: any = (pageNumber - 1) * limit;
+  const movies = await db
+    .selectFrom("movies-info")
+    .selectAll()
+    .orderBy("id")
+    .limit(limit)
+    .offset(offset)
+    .execute();
+  return movies;
+};

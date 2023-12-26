@@ -4,11 +4,15 @@ import { getMovieDetails } from "./src/logicFetch";
 import axios from "axios";
 import { AxiosResponse } from "axios";
 import { createMovies } from "./src/models/Movies";
+import movieRoutes from "./src/routes/moviesRoutes";
+// import userRoutes from "./src/routes/authroutes";
 const TMDB_API_KEY = "e84a72fca7815b41c03fe50eacfa8df6";
 let result: any[] = [];
 const app = express();
 
 app.use(express.json());
+
+app.use("/movies", movieRoutes);
 async function getAllMovies(next: NextFunction): Promise<void> {
   try {
     let currentPage = 1;
