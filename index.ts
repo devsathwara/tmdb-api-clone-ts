@@ -14,6 +14,11 @@ const app = express();
 
 app.use(express.json());
 app.use(cookieParser());
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  console.error(err.stack);
+  res.status(500).send("Something went wrong!");
+});
+
 app.use("/movies", movieRoutes);
 app.use("/user", userRoutes);
 async function getAllMovies(next: NextFunction): Promise<void> {

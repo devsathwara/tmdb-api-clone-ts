@@ -5,9 +5,21 @@ import * as bcrypt from "bcrypt";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import j from "../config/jwt";
 const emailSchema = Z.string().email({ message: "Invalid Email" });
-const passwordSchema = Z.string().min(5, {
-  message: "password should be 5 letters or more",
-});
+const passwordSchema = Z.string().refine(
+  (password) => {
+    return (
+      password.length >= 8 &&
+      /[a-z]/.test(password) &&
+      /[A-Z]/.test(password) &&
+      /\d/.test(password) &&
+      /[!@#$%^&*()_+{}\[\]:;<>,.?~\\/-]/.test(password)
+    );
+  },
+  {
+    message:
+      "Invalid password. It should be at least 8 characters long and contain at least one lowercase letter, one uppercase letter, one digit, and one special character.",
+  }
+);
 export const registerUser = async (
   req: Request,
   res: Response
@@ -16,6 +28,12 @@ export const registerUser = async (
     let { email, password, username }: any = req.body;
     emailSchema.parse(email);
     passwordSchema.parse(password);
+    const userExist = await User.findUser(email);
+    if (userExist) {
+      return res.json({
+        message: "Your account is already there please Login",
+      });
+    }
     // hash the password before saving it to database
     password = await bcrypt.hash(password, 10);
     let data: any = {
@@ -31,15 +49,19 @@ export const registerUser = async (
       throw new Error("Error in creating new user");
     }
   } catch (error) {
+    if (error instanceof Z.ZodError) {
+      const errorMessage = error.errors.map((e) => e.message).join(", ");
+      return res.status(400).json({ error: errorMessage });
+    }
+
     console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 };
 export const loginUser = async (req: Request, res: Response): Promise<any> => {
   try {
     let { email, password } = req.body;
-    console.log(password);
     const user = await User.findUser(email);
-    console.log(user);
     if (!user) {
       return res
         .status(401)
@@ -79,6 +101,6 @@ export const logoutUser = async (req: Request, res: Response): Promise<any> => {
       .json({ auth: false, token: null, message: "Logout Successful" });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Internal Server Error" });
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 };
