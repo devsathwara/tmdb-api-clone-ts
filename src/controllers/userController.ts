@@ -68,8 +68,12 @@ export const loginUser = async (req: Request, res: Response): Promise<any> => {
 };
 export const logoutUser = async (req: Request, res: Response): Promise<any> => {
   try {
-    res.clearCookie("token");
-
+    const token = res.clearCookie("token");
+    if (!token) {
+      return res
+        .status(404)
+        .send({ auth: false, message: "No token provided" });
+    }
     return res
       .status(200)
       .json({ auth: false, token: null, message: "Logout Successful" });
