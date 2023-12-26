@@ -1,12 +1,6 @@
-import express, {
-  NextFunction,
-  Request,
-  Response,
-  Router,
-  request,
-} from "express";
+import express, { NextFunction, Request, Response, Router } from "express";
 import { displayMoviesbyPages } from "../controllers/moviesContoller";
-
+import authenticationMiddleware from "../middleware/authMiddleware";
 const router: Router = express.Router();
 
 router.get(
