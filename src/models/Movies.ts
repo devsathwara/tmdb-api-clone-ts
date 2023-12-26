@@ -1,5 +1,6 @@
 import { db } from "../db/database";
 import { MoviesInfo } from "../db/db";
+
 // export const createMovie = async (data: any, req: Request, res: Response) => {
 //   const result = await db.insertInto("movies-info").values(data).execute();
 //   return result;
@@ -30,25 +31,25 @@ interface MovieData {
 //  data :any[]
 // ): Promise<any> => {
 //   // console.log("Inserting data:", {
-//     // mid,
-//     // adult,
-//     // backdrop_path,
-//     // genre_ids,
-//     // original_language,
-//     // original_title,
-//     // overview,
-//     // popularity,
-//     // poster_path,
-//     // release_date,
-//     // title,
-//     // video,
-//     // vote_average,
-//     // vote_count,
-//     // external_ids,
-//     // status,
-//     // revenue,
-//     // runtime,
-//     // budget,
+// mid,
+// adult,
+// backdrop_path,
+// genre_ids,
+// original_language,
+// original_title,
+// overview,
+// popularity,
+// poster_path,
+// release_date,
+// title,
+// video,
+// vote_average,
+// vote_count,
+// external_ids,
+// status,
+// revenue,
+// runtime,
+// budget,
 //   // });
 // const rows=data.map(({  mid,
 //   adult,
@@ -82,12 +83,16 @@ export const createMovies = async (data: any[]): Promise<void> => {
     console.warn("No data provided for insertion.");
     return;
   }
-  console.log(data);
+  // console.log(data);
   try {
     const result = await db
       .insertInto("movies-info")
-      .values(data) // pass the array directly
+      .values(data)
+      .ignore()
       .execute();
+    // if (result) {
+    //   console.log(`${result.length} row(s) inserted.`);
+    // }
   } catch (error: any) {
     console.error("SQL Error:", error.message);
     throw error;
