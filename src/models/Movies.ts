@@ -96,14 +96,14 @@ export const insertList = async (data: any): Promise<any> => {
     return;
   }
   const result = await db
-    .insertInto("favourite-list")
+    .insertInto("watch-list")
     .values(data)
     .ignore()
     .execute();
 };
 export const accessListUserWise = async (email: any): Promise<any> => {
   const list = await db
-    .selectFrom("favourite-list")
+    .selectFrom("watch-list")
     .selectAll()
     .where("email", "=", `${email}`)
     .execute();

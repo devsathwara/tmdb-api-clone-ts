@@ -4,12 +4,6 @@ export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
   ? ColumnType<S, I | undefined, U>
   : ColumnType<T, T | undefined, T>;
 
-export interface FavouriteList {
-  email: string;
-  id: Generated<number>;
-  name: Generated<string | null>;
-}
-
 export interface MoviesFavourite {
   email: string;
   id: Generated<number>;
@@ -58,10 +52,17 @@ export interface Users {
   verify_token: Generated<string | null>;
 }
 
+export interface WatchList {
+  email: string;
+  id: Generated<number>;
+  mid: Generated<string | null>;
+  name: string;
+}
+
 export interface DB {
-  "favourite-list": FavouriteList;
   "movies-favourite": MoviesFavourite;
   "movies-genre": MoviesGenre;
   "movies-info": MoviesInfo;
   users: Users;
+  "watch-list": WatchList;
 }
