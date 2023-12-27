@@ -31,5 +31,19 @@ const authenticationMiddleware = (
     res.status(500).json({ success: false, message: "Authentication failed" });
   }
 };
-
+export const authCheck = (
+  req: CustomRequest,
+  res: Response,
+  next: NextFunction
+): any => {
+  let cookieemail = req.cookies.email;
+  if (cookieemail === null) {
+    return res.json({
+      message:
+        "Please login first then you can change password or go to forgot password",
+    });
+  } else {
+    next();
+  }
+};
 export default authenticationMiddleware;

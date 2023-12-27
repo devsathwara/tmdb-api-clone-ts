@@ -4,15 +4,19 @@ export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
   ? ColumnType<S, I | undefined, U>
   : ColumnType<T, T | undefined, T>;
 
+export interface MoviesGenre {
+  id: Generated<number | null>;
+  name: Generated<string | null>;
+}
+
 export interface MoviesInfo {
-  id: Generated<number>;
-  mid: number;
-  adult: Generated<number | null>;
+  adult: Generated<string | null>;
   backdrop_path: Generated<string | null>;
   budget: Generated<number | null>;
   external_ids: Generated<string | null>;
   genre_ids: Generated<string | null>;
-  imdb_id: Generated<string | null>;
+  id: Generated<number>;
+  mid: number;
   original_language: Generated<string | null>;
   original_title: Generated<string | null>;
   overview: Generated<string | null>;
@@ -36,12 +40,13 @@ export interface Users {
   is_verified: Generated<number | null>;
   password: string;
   reset_token: Generated<string | null>;
-  reset_token_expires_at: Generated<Date | null>;
   updated_at: Generated<Date>;
   username: string;
+  verify_token: Generated<string | null>;
 }
 
 export interface DB {
+  "movies-genre": MoviesGenre;
   "movies-info": MoviesInfo;
   users: Users;
 }

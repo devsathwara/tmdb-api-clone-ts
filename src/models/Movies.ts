@@ -120,3 +120,24 @@ export const getMoviesbyPage = async (pageNumber: any): Promise<any> => {
     .execute();
   return movies;
 };
+export const insertGenre = async (data: any[]): Promise<any> => {
+  if (data.length == 0) {
+    console.warn("No data provided for insertion.");
+    return;
+  }
+  // console.log(data);
+  try {
+    const result = await db
+      .insertInto("movies-genre")
+      .values(data)
+      .ignore()
+      .execute();
+    // if (result) {
+    //   console.log(`${result.length} row(s) inserted.`);
+    // }
+    return result;
+  } catch (error: any) {
+    console.error("SQL Error:", error.message);
+    throw error;
+  }
+};
