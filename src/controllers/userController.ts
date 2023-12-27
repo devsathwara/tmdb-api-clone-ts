@@ -145,9 +145,17 @@ export const verifyEmail = async (
     const { token } = req.params;
     const { email } = req.body;
     const user = await User.findUser(email);
+    console.log(user);
     if (user[0].is_verified == 0) {
       if (user[0].verify_token === token) {
         await User.updateVerifyToken(email, null);
+        const info = await transport.sendMail({
+          from: '"TMDB 👻" <info@tmdb.com>', // sender address
+          to: `${email}`, // list of receivers
+          subject: "Welcome🙌🙌", // Subject line
+          text: `Hello👋, 
+          Welcome to TMDB(The Movie Database)`, // plain text body
+        });
         return res.status(200).send({
           message: "Your email is successfully verified you can login now",
         });
