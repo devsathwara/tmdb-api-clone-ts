@@ -4,7 +4,7 @@ import jwt, { JwtPayload } from "jsonwebtoken";
 interface CustomRequest extends Request {
   user?: any;
 }
-const authenticationMiddleware = (
+export const authenticationMiddleware = (
   req: CustomRequest,
   res: Response,
   next: NextFunction
@@ -32,18 +32,22 @@ const authenticationMiddleware = (
   }
 };
 export const authCheck = (
-  req: CustomRequest,
+  req: Request,
   res: Response,
   next: NextFunction
 ): any => {
   let cookieemail = req.cookies.email;
-  if (cookieemail === null) {
+  console.log(cookieemail);
+  if (!cookieemail) {
+    console.log("enter if");
     return res.json({
-      message:
-        "Please login first then you can change password or go to forgot password",
+      message: "Please login first",
     });
   } else {
+    console.log("enter else");
     next();
+    console.log("enter else");
   }
 };
-export default authenticationMiddleware;
+
+// export default authenticationMiddleware;

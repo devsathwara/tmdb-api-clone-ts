@@ -1,3 +1,4 @@
+import { date } from "zod";
 import { db } from "../db/database";
 import { MoviesInfo } from "../db/db";
 
@@ -26,58 +27,6 @@ interface MovieData {
   runtime: any;
   budget: any;
 }
-
-// export const createMovies = async (
-//  data :any[]
-// ): Promise<any> => {
-//   // console.log("Inserting data:", {
-// mid,
-// adult,
-// backdrop_path,
-// genre_ids,
-// original_language,
-// original_title,
-// overview,
-// popularity,
-// poster_path,
-// release_date,
-// title,
-// video,
-// vote_average,
-// vote_count,
-// external_ids,
-// status,
-// revenue,
-// runtime,
-// budget,
-//   // });
-// const rows=data.map(({  mid,
-//   adult,
-//   backdrop_path,
-//   genre_ids,
-//   original_language,
-//   original_title,
-//   overview,
-//   popularity,
-//   poster_path,
-//   release_date,
-//   title,
-//   video,
-//   vote_average,
-//   vote_count,
-//   external_ids,
-//   status,
-//   revenue,
-//   runtime,
-//   budget, }) => {
-//     `('${mid}', ${adult}, ${backdrop_path},${genre_ids},${original_language},${original_title},${overview},${popularity},${poster_path},${release_date},${title},${video},${vote_average},${vote_count},${external_ids},${status},${revenue},${runtime},${budget})`
-//   }).join(',')
-//   const result = await db
-//     .insertInto("movies-info")
-//     .values(rows)
-//     .execute();
-//   return result;
-// };
 export const createMovies = async (data: any[]): Promise<void> => {
   if (data.length == 0) {
     console.warn("No data provided for insertion.");
@@ -140,4 +89,23 @@ export const insertGenre = async (data: any[]): Promise<any> => {
     console.error("SQL Error:", error.message);
     throw error;
   }
+};
+export const insertList = async (data: any): Promise<any> => {
+  if (data.length == 0) {
+    console.warn("No data provided for insertion.");
+    return;
+  }
+  const result = await db
+    .insertInto("favourite-list")
+    .values(data)
+    .ignore()
+    .execute();
+};
+export const accessListUserWise = async (email: any): Promise<any> => {
+  const list = await db
+    .selectFrom("favourite-list")
+    .selectAll()
+    .where("email", "=", `${email}`)
+    .execute();
+  return list;
 };

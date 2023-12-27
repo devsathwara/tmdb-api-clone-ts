@@ -6,7 +6,6 @@ import { AxiosResponse } from "axios";
 import { createMovies, insertGenre } from "./src/models/Movies";
 import movieRoutes from "./src/routes/moviesRoutes";
 import userRoutes from "./src/routes/authroutes";
-import authenticationMiddleware from "./src/middleware/authMiddleware";
 import cookieParser from "cookie-parser";
 const TMDB_API_KEY = "e84a72fca7815b41c03fe50eacfa8df6";
 let result: any[] = [];
