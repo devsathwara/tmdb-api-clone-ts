@@ -1,11 +1,7 @@
-import { date } from "zod";
 import { db } from "../db/database";
 import { MoviesInfo } from "../db/db";
+import { RawBuilder, sql, Compilable, QueryResult } from "kysely";
 
-// export const createMovie = async (data: any, req: Request, res: Response) => {
-//   const result = await db.insertInto("movies-info").values(data).execute();
-//   return result;
-// };
 interface MovieData {
   mid: any;
   adult: any;
@@ -109,3 +105,73 @@ export const accessListUserWise = async (email: any): Promise<any> => {
     .execute();
   return list;
 };
+
+export async function updateFavourites(email: any, movieId: number) {
+  const movie: any = await db
+    .selectFrom("users")
+    .select("favourites")
+    .where("email", "=", email)
+    .executeTakeFirstOrThrow();
+  let favMovies = JSON.parse(movie.favourites, (key, value) =>
+    typeof value === "bigint" ? parseInt(value.toString()) : value
+  );
+
+  if (!favMovies) {
+    favMovies = [];
+  }
+
+  const movieIndex = favMovies.findIndex(
+    (id: number) => id === Number(movieId)
+  );
+
+  if (movieIndex === -1) {
+    favMovies.push(Number(movieId));
+  } else {
+    favMovies = favMovies.filter((id: number) => id !== Number(movieId));
+  }
+
+  const result = await db
+    .updateTable("users")
+    .set({
+      favourites: JSON.stringify(favMovies),
+    })
+    .where("email", "=", email)
+    .execute();
+
+  return result;
+}
+
+export async function checkFavourites(email: any) {
+  const list = await db
+    .selectFrom("users")
+    .select("favourites")
+    .where("email", "=", `${email}`)
+    .execute();
+  return list;
+}
+export async function checkmid(movieID: any) {
+  const list = await db
+    .selectFrom("movies-info")
+    .select("title")
+    .where("mid", "=", parseInt(`${movieID}`))
+    .execute();
+  return list;
+}
+export async function deleteFavourite(mid: any, email: any) {
+  const list = await checkFavourites(email);
+  const favs: string | null = list[0].favourites as string | null;
+
+  if (favs === null) {
+    throw new Error("No favourites found for this user");
+  }
+  const ids = JSON.parse(favs);
+  const newIds = ids.filter((i: number) => i !== parseInt(String(mid)));
+  const result = await db
+    .updateTable("users")
+    .set({
+      favourites: JSON.stringify(newIds),
+    })
+    .where("email", "=", email)
+    .execute();
+  return result;
+}

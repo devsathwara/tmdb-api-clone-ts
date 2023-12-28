@@ -37,6 +37,7 @@ async function getAllMovies(next: NextFunction): Promise<void> {
 
         const promiseMovie = pageMovies.map(async (movie: any) => {
           const details = await getMovieDetails(movie.id);
+          // console.log(details?.countries);
           result.push({
             mid: movie.id,
             adult: movie.adult,
@@ -57,6 +58,7 @@ async function getAllMovies(next: NextFunction): Promise<void> {
             revenue: details?.revenue,
             runtime: details?.runtime,
             budget: details?.budget,
+            countries: details?.countries,
           });
         });
         await Promise.allSettled(promiseMovie);
@@ -76,29 +78,29 @@ async function getAllMovies(next: NextFunction): Promise<void> {
     console.error("An unexpected error occurred: ", error.message);
   }
 }
-// async function getAllGenres(next: NextFunction): Promise<void> {
-//   try {
-//     const response: AxiosResponse = await axios.get(
-//       `https://api.themoviedb.org/3/genre/movie/list?language=en&api_key=${TMDB_API_KEY}`
-//     );
-//     const genres = response.data.genres;
-//     const insertData = await insertGenre(genres);
-//     next;
-//     // if (insertData) {
-//     //   next;
-//     // }
-//     // console.log(genres);
-//   } catch (error: any) {
-//     console.error(error);
-//   }
-// }
+async function getAllGenres(next: NextFunction): Promise<void> {
+  try {
+    const response: AxiosResponse = await axios.get(
+      `https://api.themoviedb.org/3/genre/movie/list?language=en&api_key=${TMDB_API_KEY}`
+    );
+    const genres = response.data.genres;
+    const insertData = await insertGenre(genres);
+    next;
+    // if (insertData) {
+    //   next;
+    // }
+    // console.log(genres);
+  } catch (error: any) {
+    console.error(error);
+  }
+}
 app.get("/fetch-api-data", getAllMovies, (req: Request, res: Response) => {
   res.json({ message: "Inserted Successfully" });
 });
 
-// app.get("/fetch-genres-movies", getAllGenres, (req: Request, res: Response) => {
-//   res.json({ message: "inserted genres" });
-// });
+app.get("/fetch-genres-movies", getAllGenres, (req: Request, res: Response) => {
+  res.json({ message: "inserted genres" });
+});
 app.listen(config.env.app.port, () => {
   console.log(`Server is running on port ${config.env.app.port}`);
 });

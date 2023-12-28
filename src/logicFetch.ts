@@ -29,7 +29,11 @@ export async function getMovieDetails(movieId: number): Promise<any> {
     const response: AxiosResponse = await axios.get(
       `https://api.themoviedb.org/3/movie/${movieId}?api_key=${TMDB_API_KEY}&append_to_response=external_ids`
     );
-
+    // console.log(response.data.production_countries);
+    let countryArray = response.data.production_countries;
+    let countriesArray = countryArray.map((country: any) => {
+      return country.name;
+    });
     return {
       // id: response.data.id,
       genres: response.data.genres,
@@ -39,6 +43,7 @@ export async function getMovieDetails(movieId: number): Promise<any> {
       runtime: response.data.runtime,
       popularity: response.data.popularity,
       budget: response.data.budget,
+      countries: JSON.stringify(countriesArray),
     };
   } catch (error: any) {
     console.error(

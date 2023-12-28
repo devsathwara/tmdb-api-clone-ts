@@ -37,16 +37,13 @@ export const authCheck = (
   next: NextFunction
 ): any => {
   let cookieemail = req.cookies.email;
-  console.log(cookieemail);
   if (!cookieemail) {
     console.log("enter if");
     return res.json({
       message: "Please login first",
     });
   } else {
-    console.log("enter else");
     next();
-    console.log("enter else");
   }
 };
 

@@ -53,3 +53,41 @@ export const accessListUser = async (req: Request, res: Response) => {
     console.error(error);
   }
 };
+export const insertFavourites = async (req: Request, res: Response) => {
+  try {
+    const userEmail = req.cookies.email;
+    const { mid } = req.body;
+    const midCheck = await Movies.checkmid(parseInt(mid));
+    // (3).toFixed;
+
+    if (midCheck.length == 0) {
+      return res.status(400).send("Movie id is not there in database");
+    }
+    const userFavouritecheck = await Movies.checkFavourites(userEmail);
+    userFavouritecheck.forEach((id: { favourites: string | null }) => {
+      // if (parseInt(id.toString()) === parseInt(mid)) {
+      //   return res.json({ message: "This movie is already Favourites" });
+      // }
+      // console.log(id);
+      let favouritesArray =
+        id.favourites === null ? [] : JSON.parse(id.favourites);
+      if (favouritesArray.includes(parseInt(mid))) {
+        return res.json({ message: "Already in the Favorites" });
+      }
+    });
+    const userFavoriteList = await Movies.updateFavourites(userEmail, mid);
+    return res.json({ message: `${mid} added to your Favourites` });
+  } catch (error) {
+    console.error(error);
+  }
+};
+export const deleteFavourite = async (req: Request, res: Response) => {
+  try {
+    const userEmail = req.cookies.email;
+    const { mid } = req.body;
+    const deleteFav = await Movies.deleteFavourite(mid, userEmail);
+    return res.json({ message: "Deleted from Your Favourites" });
+  } catch (error) {
+    console.error(error);
+  }
+};
