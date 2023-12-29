@@ -1,7 +1,13 @@
 import { db } from "../db/database";
 import { MoviesInfo } from "../db/db";
-import { RawBuilder, sql, Compilable, QueryResult } from "kysely";
-
+import {
+  RawBuilder,
+  sql,
+  Compilable,
+  QueryResult,
+  CompiledQuery,
+  createRawBuilder,
+} from "kysely";
 interface MovieData {
   mid: any;
   adult: any;
@@ -175,3 +181,14 @@ export async function deleteFavourite(mid: any, email: any) {
     .execute();
   return result;
 }
+export const countryRevenue = async (countries: any) => {
+  const result = sql<any>`
+    SELECT
+      JSON_UNQUOTE(JSON_EXTRACT(countries, "$[0]")) as country_name,
+      SUM(revenue) as total_revenue
+    FROM  \`movies-info\`
+    WHERE JSON_UNQUOTE(JSON_EXTRACT(countries, "$[0]")) IN (${countries})
+    GROUP BY JSON_UNQUOTE(JSON_EXTRACT(countries, "$[0]"))
+  `.execute(db);
+  return result;
+};

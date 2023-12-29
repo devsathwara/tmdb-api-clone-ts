@@ -29,10 +29,10 @@ export async function getMovieDetails(movieId: number): Promise<any> {
     const response: AxiosResponse = await axios.get(
       `https://api.themoviedb.org/3/movie/${movieId}?api_key=${TMDB_API_KEY}&append_to_response=external_ids`
     );
-    // console.log(response.data.production_countries);
+    console.log(response.data.production_countries);
     let countryArray = response.data.production_countries;
     let countriesArray = countryArray.map((country: any) => {
-      return country.name;
+      return country.iso_3166_1;
     });
     return {
       // id: response.data.id,

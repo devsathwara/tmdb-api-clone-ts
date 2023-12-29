@@ -12,4 +12,6 @@ router.post("/create-favourite-list", authCheck, movies.createFavouriteList);
 router.get("/access-favourite-list", authCheck, movies.accessListUser);
 router.post("/add-favourites", authCheck, movies.insertFavourites);
 router.post("/delete-favourites", authCheck, movies.deleteFavourite);
+router.get("/country-revenues", movies.countriesRevenue);
+
 export default router;

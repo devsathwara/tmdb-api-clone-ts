@@ -91,3 +91,25 @@ export const deleteFavourite = async (req: Request, res: Response) => {
     console.error(error);
   }
 };
+export const countriesRevenue = async (req: Request, res: Response) => {
+  try {
+    const { countries } = req.body;
+    const countryList: any = JSON.stringify(countries);
+    let countriesRevenue: any[] = [];
+
+    await Promise.all(
+      countries.map(async (country: any) => {
+        const result = await Movies.countryRevenue(country);
+        result.rows.forEach((row: any) => {
+          countriesRevenue.push({ [row.country_name]: row.total_revenue });
+        });
+      })
+    );
+
+    // console.log(countriesRevenue);
+    res.json(countriesRevenue);
+  } catch (error: any) {
+    console.error("Error:", error.message);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
