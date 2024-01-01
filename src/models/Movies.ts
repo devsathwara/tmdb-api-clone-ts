@@ -192,3 +192,9 @@ export const countryRevenue = async (countries: any) => {
   `.execute(db);
   return result;
 };
+export const moviesReleasedin3Years = async () => {
+  const result = sql<any>`
+  SELECT YEAR(release_date) AS ReleaseYear, WEEKOFYEAR(release_date) AS Week, COUNT(*) AS NumberOfMovies FROM \`movies-info\` WHERE release_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 3 YEAR) AND CURDATE() GROUP BY YEAR(release_date), WEEKOFYEAR(release_date);
+  `.execute(db);
+  return result;
+};

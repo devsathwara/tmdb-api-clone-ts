@@ -3,4 +3,4 @@ Chart 3years:
 SELECT YEAR(release_date) AS ReleaseYear, WEEKOFYEAR(release_date) AS Week, COUNT(*) AS NumberOfMovies FROM `movies-info` WHERE release_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 3 YEAR) AND CURDATE() GROUP BY YEAR(release_date), WEEKOFYEAR(release_date);
 
 Genre filter:
-SELECT m.*, g.name FROM `movies-info` m JOIN ( SELECT id, name FROM `movies-genre` as g WHERE id IN (28, 35) ) g ON FIND_IN_SET(g.id, m.genre_ids) WHERE g.name = 'Comedy' LIMIT 0, 25;
+SELECT m.*, g.name FROM `movies-info` m JOIN ( SELECT id, name FROM `movies-genre` as g WHERE id IN (35,10751,14)) g ON FIND_IN_SET(g.id, m.genre_ids) WHERE g.name = 'Comedy' LIMIT 0, 25;

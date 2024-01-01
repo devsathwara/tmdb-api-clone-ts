@@ -113,3 +113,11 @@ export const countriesRevenue = async (req: Request, res: Response) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+export const moviesReleasedin3Years = async (req: Request, res: Response) => {
+  try {
+    const releasedMovies = await Movies.moviesReleasedin3Years();
+    return res.status(200).json(releasedMovies);
+  } catch (error) {
+    console.error(error);
+  }
+};
