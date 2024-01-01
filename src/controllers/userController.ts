@@ -3,25 +3,43 @@ import { NextFunction, Request, Response } from "express";
 import * as Z from "zod";
 import * as bcrypt from "bcrypt";
 import jwt, { JwtPayload } from "jsonwebtoken";
-import j from "../config/jwt";
+import config from "../config/dotenv";
 import nodemailer from "nodemailer";
 import crypto from "crypto";
-const emailSchema = Z.string().email({ message: "Invalid Email" });
-const passwordSchema = Z.string().refine(
-  (password) => {
-    return (
-      password.length >= 8 &&
-      /[a-z]/.test(password) &&
-      /[A-Z]/.test(password) &&
-      /\d/.test(password) &&
-      /[!@#$%^&*()_+{}\[\]:;<>,.?~\\/-]/.test(password)
-    );
-  },
-  {
-    message:
-      "Invalid password. It should be at least 8 characters long and contain at least one lowercase letter, one uppercase letter, one digit, and one special character.",
-  }
-);
+// const emailSchema = Z.string().email({ message: "Invalid Email" });
+// const passwordSchema = Z.string().refine(
+//   (password) => {
+//     return (
+//       password.length >= 8 &&
+//       /[a-z]/.test(password) &&
+//       /[A-Z]/.test(password) &&
+//       /\d/.test(password) &&
+//       /[!@#$%^&*()_+{}\[\]:;<>,.?~\\/-]/.test(password)
+//     );
+//   },
+//   {
+//     message:
+//       "Invalid password. It should be at least 8 characters long and contain at least one lowercase letter, one uppercase letter, one digit, and one special character.",
+//   }
+// );
+const registerSchema = {
+  emailSchema: Z.string().email({ message: "Invalid Email" }),
+  passwordSchema: Z.string().refine(
+    (password) => {
+      return (
+        password.length >= 8 &&
+        /[a-z]/.test(password) &&
+        /[A-Z]/.test(password) &&
+        /\d/.test(password) &&
+        /[!@#$%^&*()_+{}\[\]:;<>,.?~\\/-]/.test(password)
+      );
+    },
+    {
+      message:
+        "Invalid password. It should be at least 8 characters long and contain at least one lowercase letter, one uppercase letter, one digit, and one special character.",
+    }
+  ),
+};
 var transport = nodemailer.createTransport({
   host: "sandbox.smtp.mailtrap.io",
   port: 2525,
@@ -36,8 +54,8 @@ export const registerUser = async (
 ): Promise<any> => {
   try {
     let { email, password, username }: any = req.body;
-    emailSchema.parse(email);
-    passwordSchema.parse(password);
+    registerSchema.emailSchema.parse(email);
+    registerSchema.passwordSchema.parse(password);
     const userExist = await User.findUser(email);
     if (userExist.length > 0) {
       res.json({
@@ -57,7 +75,7 @@ export const registerUser = async (
     const user = await User.registeruser(data);
     if (user) {
       //verify email
-      const userToken = await User.updateToken(user[0].email, token);
+      // const userToken = await User.updateToken(user[0].email, token);
       const info = await transport.sendMail({
         from: '"TMDB 👻" <info@tmdb.com>', // sender address
         to: `${email}`, // list of receivers
@@ -102,8 +120,8 @@ export const loginUser = async (req: Request, res: Response): Promise<any> => {
     }
     var token = jwt.sign(
       { email: user.email, password: user.password },
-      j.secret,
-      { expiresIn: j.expiresIn }
+      config.env.app.secret,
+      { expiresIn: config.env.app.expiresIn }
     );
     res.cookie("token", token, { httpOnly: true });
     res.cookie("email", user[0].email, { httpOnly: true });
@@ -145,7 +163,7 @@ export const verifyEmail = async (
     const { token } = req.params;
     const { email } = req.body;
     const user = await User.findUser(email);
-    console.log(user);
+    // console.log(user);
     if (user[0].is_verified == 0) {
       if (user[0].verify_token === token) {
         await User.updateVerifyToken(email, null);

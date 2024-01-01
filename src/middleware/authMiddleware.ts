@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import config from "../config/jwt";
+import config from "../config/dotenv";
 import jwt, { JwtPayload } from "jsonwebtoken";
 interface CustomRequest extends Request {
   user?: any;
@@ -17,7 +17,7 @@ export const authenticationMiddleware = (
   }
 
   try {
-    const decoded = jwt.verify(token, config.secret) as JwtPayload;
+    const decoded = jwt.verify(token, config.env.app.secret) as JwtPayload;
     req.user = decoded;
     next();
   } catch (ex) {
