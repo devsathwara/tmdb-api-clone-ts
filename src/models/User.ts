@@ -13,7 +13,7 @@ interface User {
   created_at: any;
   updated_at: any;
 }
-export const registeruser = async (data: any[]): Promise<any> => {
+export const registerUser = async (data: any[]): Promise<any> => {
   try {
     const user = await db.insertInto("users").values(data).execute();
     return user;
@@ -50,7 +50,7 @@ export const findUser = async (email: string): Promise<any> => {
 //     throw error;
 //   }
 // };
-export const updateIsverified = async (
+export const updateIsVerified = async (
   email: any,
   token: any
 ): Promise<any> => {

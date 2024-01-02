@@ -147,12 +147,15 @@ export const accessListUserWise = async (email: any): Promise<any> => {
 //   return result;
 // }
 export async function insertFavourites(email: any, mid: number) {
-  // Use a single SQL query to insert or update the favorites
   const query = sql<any>`
-  INSERT INTO users (email, favourites)
-  VALUES (${email}, JSON_ARRAY(${mid}))
-  ON DUPLICATE KEY UPDATE
-  favourites = JSON_ARRAY_APPEND(COALESCE(favourites, '[]'), '$', ${mid})
+  UPDATE users
+  SET favourites = JSON_ARRAY_APPEND(
+    COALESCE(favourites, JSON_ARRAY()),
+    '$',
+    ${mid}
+  )
+  WHERE email = ${email}
+  AND JSON_SEARCH(COALESCE(favourites, JSON_ARRAY()), 'one', ${mid}) IS NULL
 `.execute(db);
 
   return query;
@@ -182,7 +185,7 @@ export async function MoviesIdWatchList(email: any, id: any) {
     .executeTakeFirst();
   return list;
 }
-export async function checkmid(movieID: any) {
+export async function checkMid(movieID: any) {
   const list = await db
     .selectFrom("movies-info")
     .select("title")
@@ -261,11 +264,16 @@ export const getMoviesbyID = async (mid: any) => {
     .executeTakeFirst();
   return list;
 };
-export const insertMovieswatchlist = async (email: any, mid: any, id: any) => {
+export const insertMoviesWatchlist = async (email: any, mid: any, id: any) => {
   const result = sql<any>`
-    UPDATE \`watch-list\`
-    SET mid = JSON_ARRAY_APPEND(COALESCE(mid, '[]'), '$', ${mid})
-    WHERE id = ${id} AND email = ${email}
+  UPDATE users
+  SET favourites = JSON_ARRAY_APPEND(
+    COALESCE(favourites, JSON_ARRAY()),
+    '$',
+    ${mid}
+  )
+  WHERE email = ${email} AND id=${id}
+  AND JSON_SEARCH(COALESCE(favourites, JSON_ARRAY()), 'one', ${mid}) IS NULL
   `.execute(db);
   return result;
 };

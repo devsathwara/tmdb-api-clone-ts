@@ -3,37 +3,38 @@ import { NextFunction, Request, Response } from "express";
 import * as Z from "zod";
 import * as bcrypt from "bcrypt";
 import jwt, { JwtPayload } from "jsonwebtoken";
-import config from "../config/dotenv";
+import config from "../config/config";
 import nodemailer from "nodemailer";
 import crypto from "crypto";
-import { sendEmail } from "../../utils/utils";
+import { sendEmail, createJWTToken, validateJWTToken } from "../../utils/utils";
 import { jwtDecode } from "jwt-decode";
-const registerSchema = {
-  emailSchema: Z.string().email({ message: "Invalid Email" }),
-  passwordSchema: Z.string().refine(
-    (password) => {
-      return (
-        password.length >= 8 &&
-        /[a-z]/.test(password) &&
-        /[A-Z]/.test(password) &&
-        /\d/.test(password) &&
-        /[!@#$%^&*()_+{}\[\]:;<>,.?~\\/-]/.test(password)
-      );
-    },
-    {
-      message:
-        "Invalid password. It should be at least 8 characters long and contain at least one lowercase letter, one uppercase letter, one digit, and one special character.",
-    }
-  ),
-};
+import signInValidation from "../../validation/validation";
+
+// const registerSchema = {
+//   emailSchema: Z.string().email({ message: "Invalid Email" }),
+//   passwordSchema: Z.string().refine(
+//     (password) => {
+//       return (
+//         password.length >= 8 &&
+//         /[a-z]/.test(password) &&
+//         /[A-Z]/.test(password) &&
+//         /\d/.test(password) &&
+//         /[!@#$%^&*()_+{}\[\]:;<>,.?~\\/-]/.test(password)
+//       );
+//     },
+//     {
+//       message:
+//         "Invalid password. It should be at least 8 characters long and contain at least one lowercase letter, one uppercase letter, one digit, and one special character.",
+//     }
+//   ),
+// };
 export const registerUser = async (
   req: Request,
   res: Response
 ): Promise<any> => {
   try {
-    let { email, password, username }: any = req.body;
-    registerSchema.emailSchema.parse(email);
-    registerSchema.passwordSchema.parse(password);
+    let { email, password }: any = signInValidation.parse(req.body);
+    let { username } = req.body;
     const userExist = await User.findUser(email);
     if (userExist) {
       res.json({
@@ -42,10 +43,9 @@ export const registerUser = async (
     }
     // hash the password before saving it to database
     password = await bcrypt.hash(password, 10);
-    let token = jwt.sign(
+    let token = createJWTToken(
       { email: email, name: username },
-      config.env.app.secret,
-      { expiresIn: config.env.app.expiresIn }
+      `${parseInt(config.env.app.expiresIn)}h`
     );
     let data: any = {
       username: username,
@@ -53,7 +53,7 @@ export const registerUser = async (
       password: password,
       is_verified: false,
     };
-    const user = await User.registeruser(data);
+    const user = await User.registerUser(data);
     if (user) {
       //verify email
       const info = await sendEmail(
@@ -98,10 +98,9 @@ export const loginUser = async (req: Request, res: Response): Promise<any> => {
         .status(401)
         .send({ auth: false, token: null, message: "Wrong Password" });
     }
-    var token = jwt.sign(
-      { email: user.email, password: user.password },
-      config.env.app.secret,
-      { expiresIn: config.env.app.expiresIn }
+    var token = createJWTToken(
+      { email: user.email },
+      `${parseInt(config.env.app.expiresIn)}h`
     );
     res.cookie("token", token, {
       httpOnly: true,
@@ -147,14 +146,13 @@ export const verifyEmail = async (
 ): Promise<any> => {
   try {
     const { token } = req.params;
-    const decoded: any = jwtDecode(token);
+    const decoded: any = validateJWTToken(token);
     const user = await User.findUser(decoded.email);
-    // console.log(user);
     if (decoded.exp <= Date.now() / 1000) {
       return res.status(401).json({ message: "Token has expired" });
     }
     if (user.is_verified == 0) {
-      await User.updateIsverified(decoded.email, null);
+      await User.updateIsVerified(decoded.email, null);
       const info = await sendEmail(
         config.env.app.email,
         decoded.email,
@@ -190,8 +188,11 @@ export const forgotPassword = async (
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-
-    const resetToken = jwt.sign({ email: email }, config.env.app.secret);
+    console.log(config.env.app.expiresIn);
+    const resetToken = createJWTToken(
+      { email: email },
+      `${parseInt(config.env.app.expiresIn)}h`
+    );
     // Associate the reset token with the user in the database
     // await User.updateResetToken(email, resetToken);
 
@@ -225,7 +226,7 @@ export const resetPassword = async (
   }
 
   try {
-    const decoded: any = jwtDecode(token);
+    const decoded: any = validateJWTToken(token);
 
     // Check if the token is expired
     if (decoded.exp <= Date.now() / 1000) {

@@ -1,12 +1,13 @@
 import { DB } from "./db"; // this is the Database interface we defined earlier
 import { createPool } from "mysql2"; // do not use 'mysql2/promises'!
 import { Kysely, MysqlDialect } from "kysely";
+import { config } from "../config/config";
 
 const dialect = new MysqlDialect({
   pool: createPool({
-    database: "moviedb",
-    host: "localhost",
-    user: "root",
+    database: config.env.app.database,
+    host: config.env.app.host,
+    user: config.env.app.user,
     password: "",
     port: 3306,
     connectionLimit: 10,

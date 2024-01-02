@@ -1,5 +1,5 @@
 import express, { NextFunction, Request, Response } from "express";
-import { config } from "./src/config/dotenv";
+import { config } from "./src/config/config";
 import { getMovieDetails } from "./src/logicFetch";
 import axios from "axios";
 import { AxiosResponse } from "axios";

@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from "express";
-import config from "../config/dotenv";
+import config from "../config/config";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { findUser } from "../models/User";
+
 interface CustomRequest extends Request {
   user?: any;
 }
@@ -37,9 +38,8 @@ export const authCheck = (
   res: Response,
   next: NextFunction
 ): any => {
-  let cookieemail = req.cookies.email;
-  if (!cookieemail) {
-    console.log("enter if");
+  let email = req.cookies.email;
+  if (!email) {
     return res.json({
       message: "Please login first",
     });
@@ -47,13 +47,17 @@ export const authCheck = (
     next();
   }
 };
-export const checkVerifyemail = async (
+export const checkVerifyEmail = async (
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<any> => {
   try {
-    const email = req.body.email;
+    const email = req.cookies.email;
+    const decoded = req.cookies.email;
+    if (decoded.exp <= Date.now() / 1000) {
+      return res.status(401).json({ message: "Token has expired" });
+    }
     if (email) {
       const user = await findUser(email);
       if (user.is_verified == 1) {

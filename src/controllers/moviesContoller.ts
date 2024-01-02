@@ -92,12 +92,15 @@ export const updateOrInsertFavourites = async (req: Request, res: Response) => {
   try {
     const userEmail = req.cookies.email;
     const { mid } = req.body;
-    const midCheck = await Movies.checkmid(parseInt(mid));
+    const midCheck = await Movies.checkMid(parseInt(mid));
 
     if (!midCheck) {
       return res.status(400).send("Movie id is not there in database");
     }
-    await Movies.insertFavourites(userEmail, mid);
+    const result = await Movies.insertFavourites(userEmail, mid);
+    if (result.rows.length == 0) {
+      return res.json({ message: `${mid} already there in  your Favorites` });
+    }
     return res.json({ message: `${mid} added to your Favorites` });
   } catch (error) {
     console.error(error);
@@ -110,7 +113,7 @@ export const deleteFavourite = async (req: Request, res: Response) => {
     const userEmail = req.cookies.email;
     const { mid } = req.body;
     const result: any = await Movies.deleteFavourite(mid, userEmail);
-    return { message: `${mid} deleted from favourites` };
+    return res.json({ message: `${mid} deleted from favourites` });
   } catch (error) {
     console.error(error);
   }
@@ -156,10 +159,10 @@ export const moviesReleasedin3Years = async (req: Request, res: Response) => {
 export const getMoviesIncome = async (req: Request, res: Response) => {
   try {
     const { mid } = req.body;
-    const midCheck = await Movies.checkmid(parseInt(mid));
+    const midCheck = await Movies.checkMid(parseInt(mid));
     // (3).toFixed;
 
-    if (midCheck) {
+    if (!midCheck) {
       return res.status(400).send("Movie id is not there in database");
     }
     if (mid) {
@@ -211,8 +214,13 @@ export const insertMovieswatchlist = async (req: Request, res: Response) => {
     // });
     // const userFavoriteList = await Movies.updateWatchList(userEmail, mid, id);
     // return res.json({ message: `${mid} added to your Watch list` });
-    const result = await Movies.insertMovieswatchlist(userEmail, mid, id);
+    const result = await Movies.insertMoviesWatchlist(userEmail, mid, id);
     // console.log(result);
+    if (result.rows.length == 0) {
+      return res.json({
+        message: `${mid} is already there in ${id} WatchList`,
+      });
+    }
     return res
       .status(200)
       .json({ message: `${mid} is inserted to ${id} WatchList` });
@@ -231,16 +239,14 @@ export const getMoviesWatchList = async (req: Request, res: Response) => {
   }
   console.log(favouritesId);
   const moviesArr: any[] = [];
-  await Promise.all(
-    favouritesId.map(async (i: any) => {
-      let arr = JSON.parse(i.mid);
-      const moviePromises = arr.map(async (i: any) => {
-        const movie = await Movies.getMoviesbyID(i);
-        return movie;
-      });
-      moviesArr.push(...(await Promise.all(moviePromises)));
-    })
-  );
+
+  let arr = JSON.parse(favouritesId.mid);
+  const moviePromises = arr.map(async (i: any) => {
+    const movie = await Movies.getMoviesbyID(i);
+    return movie;
+  });
+  moviesArr.push(...(await Promise.all(moviePromises)));
+
   if (moviesArr.length == 0) {
     return res.send({ message: "No Movies are there is Watch List" });
   }
