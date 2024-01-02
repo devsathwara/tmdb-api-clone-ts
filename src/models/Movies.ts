@@ -112,41 +112,51 @@ export const accessListUserWise = async (email: any): Promise<any> => {
   return list;
 };
 
-export async function updateFavourites(email: any, movieId: number) {
-  const movie: any = await db
-    .selectFrom("users")
-    .select("favourites")
-    .where("email", "=", email)
-    .executeTakeFirstOrThrow();
-  let favMovies = JSON.parse(movie.favourites, (key, value) =>
-    typeof value === "bigint" ? parseInt(value.toString()) : value
-  );
+// export async function updateFavourites(email: any, movieId: number) {
+//   const movie: any = await db
+//     .selectFrom("users")
+//     .select("favourites")
+//     .where("email", "=", email)
+//     .executeTakeFirstOrThrow();
+//   let favMovies = JSON.parse(movie.favourites, (key, value) =>
+//     typeof value === "bigint" ? parseInt(value.toString()) : value
+//   );
 
-  if (!favMovies) {
-    favMovies = [];
-  }
+//   if (!favMovies) {
+//     favMovies = [];
+//   }
 
-  const movieIndex = favMovies.findIndex(
-    (id: number) => id === Number(movieId)
-  );
+//   const movieIndex = favMovies.findIndex(
+//     (id: number) => id === Number(movieId)
+//   );
 
-  if (movieIndex === -1) {
-    favMovies.push(Number(movieId));
-  } else {
-    favMovies = favMovies.filter((id: number) => id !== Number(movieId));
-  }
+//   if (movieIndex === -1) {
+//     favMovies.push(Number(movieId));
+//   } else {
+//     favMovies = favMovies.filter((id: number) => id !== Number(movieId));
+//   }
 
-  const result = await db
-    .updateTable("users")
-    .set({
-      favourites: JSON.stringify(favMovies),
-    })
-    .where("email", "=", email)
-    .execute();
+//   const result = await db
+//     .updateTable("users")
+//     .set({
+//       favourites: JSON.stringify(favMovies),
+//     })
+//     .where("email", "=", email)
+//     .execute();
 
-  return result;
+//   return result;
+// }
+export async function insertFavourites(email: any, mid: number) {
+  // Use a single SQL query to insert or update the favorites
+  const query = sql<any>`
+  INSERT INTO users (email, favourites)
+  VALUES (${email}, JSON_ARRAY(${mid}))
+  ON DUPLICATE KEY UPDATE
+  favourites = JSON_ARRAY_APPEND(COALESCE(favourites, '[]'), '$', ${mid})
+`.execute(db);
+
+  return query;
 }
-
 export async function checkFavourites(email: any) {
   const list = await db
     .selectFrom("users")
@@ -169,7 +179,7 @@ export async function MoviesIdWatchList(email: any, id: any) {
     .select("mid")
     .where("email", "=", `${email}`)
     .where("id", "=", parseInt(`${id}`))
-    .execute();
+    .executeTakeFirst();
   return list;
 }
 export async function checkmid(movieID: any) {
@@ -177,25 +187,19 @@ export async function checkmid(movieID: any) {
     .selectFrom("movies-info")
     .select("title")
     .where("mid", "=", parseInt(`${movieID}`))
-    .execute();
+    .executeTakeFirst();
   return list;
 }
 export async function deleteFavourite(mid: any, email: any) {
-  const list = await checkFavourites(email);
-  const favs: string | null = list[0].favourites as string | null;
-
-  if (favs === null) {
-    throw new Error("No favourites found for this user");
-  }
-  const ids = JSON.parse(favs);
-  const newIds = ids.filter((i: number) => i !== parseInt(String(mid)));
-  const result = await db
-    .updateTable("users")
-    .set({
-      favourites: JSON.stringify(newIds),
-    })
-    .where("email", "=", email)
-    .execute();
+  const result = sql<any>`
+  UPDATE users
+  SET favourites = CASE
+    WHEN JSON_SEARCH(favourites, 'one', ${mid}) IS NOT NULL
+    THEN JSON_SET(COALESCE(favourites, '[]'), '$', JSON_REMOVE(favourites, JSON_UNQUOTE(JSON_SEARCH(favourites, 'one', ${mid}))))
+    ELSE COALESCE(favourites, '[]')
+  END
+  WHERE email = ${email}
+    `.execute(db);
   return result;
 }
 export const countryRevenue = async (countries: any) => {
@@ -247,80 +251,92 @@ export const getmoviesbyGenre = async (genre: any, genres: any[]) => {
   ORDER BY m.id
   LIMIT 20 OFFSET ((pageNumber - 1) * 20);
   `.execute(db);
+  return result;
 };
 export const getMoviesbyID = async (mid: any) => {
   const list = await db
     .selectFrom("movies-info")
     .selectAll()
     .where("mid", "=", parseInt(`${mid}`))
-    .execute();
+    .executeTakeFirst();
   return list;
 };
-export const insertMovieswatchlist = async (
-  email: any,
-  mid: any,
-  name: any
-) => {};
-export async function updateWatchList(email: any, movieId: number, id: any) {
-  const movie: any = await db
-    .selectFrom("watch-list")
-    .select("mid")
-    .where("email", "=", email)
-    .where("id", "=", parseInt(`${id}`))
-    .executeTakeFirstOrThrow();
-  let favMovies = JSON.parse(movie.mid, (key, value) =>
-    typeof value === "bigint" ? parseInt(value.toString()) : value
-  );
-  if (!favMovies) {
-    favMovies = [];
-  }
+export const insertMovieswatchlist = async (email: any, mid: any, id: any) => {
+  const result = sql<any>`
+    UPDATE \`watch-list\`
+    SET mid = JSON_ARRAY_APPEND(COALESCE(mid, '[]'), '$', ${mid})
+    WHERE id = ${id} AND email = ${email}
+  `.execute(db);
+  return result;
+};
 
-  const movieIndex = favMovies.findIndex(
-    (id: number) => id === Number(movieId)
-  );
-
-  if (movieIndex === -1) {
-    favMovies.push(Number(movieId));
-  } else {
-    favMovies = favMovies.filter((id: number) => id !== Number(movieId));
-  }
-
-  const result = await db
-    .updateTable("watch-list")
-    .set({
-      mid: JSON.stringify(favMovies),
-    })
-    .where("email", "=", email)
-    .where("id", "=", parseInt(`${id}`))
-    .execute();
-
+// export async function updateWatchList(email: any, id: any) {
+//   // const movie: any = await db
+//   //   .selectFrom("watch-list")
+//   //   .select("mid")
+//   //   .where("email", "=", email)
+//   //   .where("id", "=", parseInt(`${id}`))
+//   //   .executeTakeFirstOrThrow();
+//   // let favMovies = JSON.parse(movie.mid, (key, value) =>
+//   //   typeof value === "bigint" ? parseInt(value.toString()) : value
+//   // );
+//   // if (!favMovies) {
+//   //   favMovies = [];
+//   // }
+//   // const movieIndex = favMovies.findIndex(
+//   //   (id: number) => id === Number(movieId)
+//   // );
+//   // if (movieIndex === -1) {
+//   //   favMovies.push(Number(movieId));
+//   // } else {
+//   //   favMovies = favMovies.filter((id: number) => id !== Number(movieId));
+//   // }
+//   // const result = await db
+//   //   .updateTable("watch-list")
+//   //   .set({
+//   //     mid: JSON.stringify(favMovies),
+//   //   })
+//   //   .where("email", "=", email)
+//   //   .where("id", "=", parseInt(`${id}`))
+//   //   .executeTakeFirst();
+// }
+export async function updateWatchlistName(email: any, id: any, name: any) {
+  const result = sql<any>`
+    UPDATE \`watch-list\`
+    SET name = ${name},updated_at=CURRENT_TIMESTAMP
+    WHERE id = ${id} AND email = ${email}
+  `.execute(db);
   return result;
 }
 export async function deleteMoviesWatchList(mid: any, email: any, id: any) {
-  const list = await checkWatchList(email);
-  const favs: string | null = list[0].mid as string | null;
-
-  if (favs === null) {
-    throw new Error("No favourites found for this user");
-  }
-  const ids = JSON.parse(favs);
-  const newIds = ids.filter((i: number) => i !== parseInt(String(mid)));
-  const result = await db
-    .updateTable("watch-list")
-    .set({
-      mid: JSON.stringify(newIds),
-    })
-    .where("email", "=", email)
-    .where("id", "=", parseInt(`${id}`))
-    .execute();
+  const result = sql<any>`  UPDATE \`watch-list\`
+  SET mid = CASE
+    WHEN JSON_SEARCH(mid, 'one', ${mid}) IS NOT NULL
+    THEN JSON_SET(COALESCE(mid, '[]'), '$', JSON_REMOVE(mid, JSON_UNQUOTE(JSON_SEARCH(mid, 'one', ${mid}))))
+    ELSE COALESCE(mid, '[]')
+  END
+  WHERE email = ${email} AND id=${id}`.execute(db);
   return result;
 }
 
+export async function deleteWatchList(email: any, id: any) {
+  const result = db
+    .deleteFrom("watch-list")
+    .where("id", "=", id)
+    .where("email", "=", email)
+    .execute();
+  return result;
+}
 export async function shareWatchlist(id: any) {
   const result = await db
     .selectFrom("watch-list")
     .selectAll()
     .where("id", "=", parseInt(id))
-    .execute();
-  return result;
+    .executeTakeFirst();
+  if (result) {
+    const query = sql<any>`  UPDATE \`watch-list\`
+    SET is_shared=1,updated_at=CURRENT_TIMESTAMP
+    WHERE id=${id}`.execute(db);
+    return result;
+  }
 }

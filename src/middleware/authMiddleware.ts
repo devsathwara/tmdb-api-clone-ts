@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import config from "../config/dotenv";
 import jwt, { JwtPayload } from "jsonwebtoken";
+import { findUser } from "../models/User";
 interface CustomRequest extends Request {
   user?: any;
 }
@@ -46,5 +47,26 @@ export const authCheck = (
     next();
   }
 };
-
+export const checkVerifyemail = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
+  try {
+    const email = req.body.email;
+    if (email) {
+      const user = await findUser(email);
+      if (user.is_verified == 1) {
+        next();
+      } else {
+        return res.json({
+          message:
+            "Please verify your account verification link has been sent to your email",
+        });
+      }
+    }
+  } catch (error: any) {
+    console.error(error);
+  }
+};
 // export default authenticationMiddleware;

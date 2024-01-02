@@ -6,22 +6,8 @@ import jwt, { JwtPayload } from "jsonwebtoken";
 import config from "../config/dotenv";
 import nodemailer from "nodemailer";
 import crypto from "crypto";
-// const emailSchema = Z.string().email({ message: "Invalid Email" });
-// const passwordSchema = Z.string().refine(
-//   (password) => {
-//     return (
-//       password.length >= 8 &&
-//       /[a-z]/.test(password) &&
-//       /[A-Z]/.test(password) &&
-//       /\d/.test(password) &&
-//       /[!@#$%^&*()_+{}\[\]:;<>,.?~\\/-]/.test(password)
-//     );
-//   },
-//   {
-//     message:
-//       "Invalid password. It should be at least 8 characters long and contain at least one lowercase letter, one uppercase letter, one digit, and one special character.",
-//   }
-// );
+import { sendEmail } from "../../utils/utils";
+import { jwtDecode } from "jwt-decode";
 const registerSchema = {
   emailSchema: Z.string().email({ message: "Invalid Email" }),
   passwordSchema: Z.string().refine(
@@ -40,14 +26,6 @@ const registerSchema = {
     }
   ),
 };
-var transport = nodemailer.createTransport({
-  host: "sandbox.smtp.mailtrap.io",
-  port: 2525,
-  auth: {
-    user: "0cfd44c96fc819",
-    pass: "dd7502c689b744",
-  },
-});
 export const registerUser = async (
   req: Request,
   res: Response
@@ -57,33 +35,35 @@ export const registerUser = async (
     registerSchema.emailSchema.parse(email);
     registerSchema.passwordSchema.parse(password);
     const userExist = await User.findUser(email);
-    if (userExist.length > 0) {
+    if (userExist) {
       res.json({
         message: "Your account is already there please Login",
       });
     }
     // hash the password before saving it to database
     password = await bcrypt.hash(password, 10);
-    let token = crypto.randomBytes(16).toString("hex");
+    let token = jwt.sign(
+      { email: email, name: username },
+      config.env.app.secret,
+      { expiresIn: config.env.app.expiresIn }
+    );
     let data: any = {
       username: username,
       email: email,
       password: password,
       is_verified: false,
-      verify_token: token,
     };
     const user = await User.registeruser(data);
     if (user) {
       //verify email
-      // const userToken = await User.updateToken(user[0].email, token);
-      const info = await transport.sendMail({
-        from: '"TMDB 👻" <info@tmdb.com>', // sender address
-        to: `${email}`, // list of receivers
-        subject: "Email Verification Link", // Subject line
-        text: `Hello👋,${username} 
-        Please verify your email by clicking below link`, // plain text body
-        html: `<a>https://localhost:9898/user/verify-email/${token}</a>`, // html body
-      });
+      const info = await sendEmail(
+        config.env.app.email,
+        email,
+        "Email Verification Link",
+        `Hello👋,${username} 
+      Please verify your email by clicking below link`,
+        `<a>https://localhost:9898/user/verify-email/${token}</a>`
+      );
 
       // console.log("Message sent: %s", info.messageId);
       return res
@@ -112,7 +92,7 @@ export const loginUser = async (req: Request, res: Response): Promise<any> => {
         .status(401)
         .send({ auth: false, token: null, message: "Email not found" });
     }
-    const validPassword = await bcrypt.compare(password, user[0].password);
+    const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) {
       return res
         .status(401)
@@ -123,8 +103,14 @@ export const loginUser = async (req: Request, res: Response): Promise<any> => {
       config.env.app.secret,
       { expiresIn: config.env.app.expiresIn }
     );
-    res.cookie("token", token, { httpOnly: true });
-    res.cookie("email", user[0].email, { httpOnly: true });
+    res.cookie("token", token, {
+      httpOnly: true,
+      expires: config.env.app.cookieExpiration,
+    });
+    res.cookie("email", user.email, {
+      httpOnly: true,
+      expires: config.env.app.cookieExpiration,
+    });
     return res.status(200).send({
       auth: true,
       username: user.username,
@@ -161,23 +147,25 @@ export const verifyEmail = async (
 ): Promise<any> => {
   try {
     const { token } = req.params;
-    const { email } = req.body;
-    const user = await User.findUser(email);
+    const decoded: any = jwtDecode(token);
+    const user = await User.findUser(decoded.email);
     // console.log(user);
-    if (user[0].is_verified == 0) {
-      if (user[0].verify_token === token) {
-        await User.updateVerifyToken(email, null);
-        const info = await transport.sendMail({
-          from: '"TMDB 👻" <info@tmdb.com>', // sender address
-          to: `${email}`, // list of receivers
-          subject: "Welcome🙌🙌", // Subject line
-          text: `Hello👋, 
-          Welcome to TMDB(The Movie Database)`, // plain text body
-        });
-        return res.status(200).send({
-          message: "Your email is successfully verified you can login now",
-        });
-      }
+    if (decoded.exp <= Date.now() / 1000) {
+      return res.status(401).json({ message: "Token has expired" });
+    }
+    if (user.is_verified == 0) {
+      await User.updateIsverified(decoded.email, null);
+      const info = await sendEmail(
+        config.env.app.email,
+        decoded.email,
+        "Welcome🙌🙌",
+        `Hello👋, 
+          Welcome to TMDB(The Movie Database)`,
+        ""
+      );
+      return res.status(200).send({
+        message: "Your email is successfully verified you can login now",
+      });
     } else {
       return res
         .status(200)
@@ -187,37 +175,7 @@ export const verifyEmail = async (
     console.error(error);
   }
 };
-export const checkVerifyemail = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<any> => {
-  try {
-    const email = req.cookies.email;
-    if (!email) {
-      const { email } = req.body;
-      const user = await User.findUser(email);
-      if (user[0].is_verified == 1) {
-        next();
-      } else {
-        return res.json({
-          message:
-            "Please verify your account verification link has been sent to your email",
-        });
-      }
-    } else {
-      const user = await User.findUser(email);
-      if (user[0].is_verified == 1) {
-        next();
-      } else {
-        return res.json({
-          message:
-            "Please verify your account verification link has been sent to your email",
-        });
-      }
-    }
-  } catch (error: any) {}
-};
+
 // In your userController.ts or a separate passwordController.ts file
 
 // ... (previous code)
@@ -233,22 +191,19 @@ export const forgotPassword = async (
       return res.status(404).json({ message: "User not found" });
     }
 
-    const resetToken = crypto.randomBytes(32).toString("hex");
+    const resetToken = jwt.sign({ email: email }, config.env.app.secret);
     // Associate the reset token with the user in the database
-    await User.updateResetToken(email, resetToken);
+    // await User.updateResetToken(email, resetToken);
 
     const resetLink = `http://localhost:9898/user/reset-password/${resetToken}`;
     // Send the reset link to the user's email
-    const info = await transport.sendMail({
-      from: '"TMDB 👻" <info@tmdb.com>',
-      to: email,
-      subject: "Password Reset Link",
-      text: `Hello👋, click the link below to reset your password: ${resetLink}`,
-      html: `<a>${resetLink}</a>`,
-    });
-
-    console.log("Password reset link sent: %s", info.messageId);
-
+    const info = await sendEmail(
+      config.env.app.email,
+      email,
+      "Password Reset Link",
+      `Hello👋, click the link below to reset your password: ${resetLink}`,
+      `<a>${resetLink}</a>`
+    );
     return res
       .status(200)
       .json({ message: "Password reset link sent to your email" });
@@ -262,22 +217,29 @@ export const resetPassword = async (
   req: Request,
   res: Response
 ): Promise<any> => {
-  try {
-    const { token } = req.params;
-    const { password } = req.body;
-    const user = await User.findUserByResetToken(token);
+  const { token } = req.params;
+  const { password } = req.body;
 
-    if (!user) {
-      return res.status(404).json({ message: "Invalid or expired token" });
+  if (!token) {
+    return res.status(404).json({ message: "Token not provided" });
+  }
+
+  try {
+    const decoded: any = jwtDecode(token);
+
+    // Check if the token is expired
+    if (decoded.exp <= Date.now() / 1000) {
+      return res.status(401).json({ message: "Token has expired" });
     }
 
+    // Continue with your password reset logic
     const hashedPassword = await bcrypt.hash(password, 10);
-    await User.updatePassword(user[0].email, hashedPassword);
+    await User.updatePassword(decoded.email, hashedPassword);
 
-    await User.updateResetToken(user[0].email, null);
+    // await User.updateResetToken(decoded.email, null);
 
     return res.status(200).json({ message: "Password reset successful" });
-  } catch (error: any) {
+  } catch (error) {
     console.error(error);
     return res.status(500).json({ error: "Internal Server Error" });
   }
@@ -287,9 +249,9 @@ export const changePassword = async (
   res: Response
 ): Promise<any> => {
   try {
-    let cookieemail = req.cookies.email;
+    let email = req.cookies.email;
     const { currentPassword, newPassword } = req.body;
-    const user = await User.findUser(cookieemail);
+    const user = await User.findUser(email);
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -305,7 +267,7 @@ export const changePassword = async (
     }
 
     const hashedNewPassword = await bcrypt.hash(newPassword, 10);
-    await User.updatePassword(cookieemail, hashedNewPassword);
+    await User.updatePassword(email, hashedNewPassword);
 
     return res.status(200).json({ message: "Password changed successfully" });
   } catch (error: any) {

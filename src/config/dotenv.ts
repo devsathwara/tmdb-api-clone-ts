@@ -5,7 +5,9 @@ export const config = {
     app: {
       port: process.env.PORT,
       secret: "tmbdb-secret-key",
-      expiresIn: "1h",
+      expiresIn: "24h",
+      email: "info@tmdb.com",
+      cookieExpiration: new Date(Date.now() + 24 * 60 * 60 * 1000),
     },
   },
 };

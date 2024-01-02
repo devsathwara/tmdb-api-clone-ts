@@ -60,40 +60,57 @@ export const accessListUser = async (req: Request, res: Response) => {
     console.error(error);
   }
 };
-export const insertFavourites = async (req: Request, res: Response) => {
+// export const insertFavourites = async (req: Request, res: Response) => {
+//   try {
+//     const userEmail = req.cookies.email;
+//     const { mid } = req.body;
+//     const midCheck = await Movies.checkmid(parseInt(mid));
+//     // (3).toFixed;
+
+//     if (midCheck) {
+//       return res.status(400).send("Movie id is not there in database");
+//     }
+//     const userFavouritecheck = await Movies.checkFavourites(userEmail);
+//     userFavouritecheck.forEach((id: { favourites: string | null }) => {
+//       // if (parseInt(id.toString()) === parseInt(mid)) {
+//       //   return res.json({ message: "This movie is already Favourites" });
+//       // }
+//       // console.log(id);
+//       let favouritesArray =
+//         id.favourites === null ? [] : JSON.parse(id.favourites);
+//       if (favouritesArray.includes(parseInt(mid))) {
+//         return res.json({ message: "Already in the Favorites" });
+//       }
+//     });
+//     const userFavoriteList = await Movies.updateFavourites(userEmail, mid);
+//     return res.json({ message: `${mid} added to your Favourites` });
+//   } catch (error) {
+//     console.error(error);
+//   }
+// };
+export const updateOrInsertFavourites = async (req: Request, res: Response) => {
   try {
     const userEmail = req.cookies.email;
     const { mid } = req.body;
     const midCheck = await Movies.checkmid(parseInt(mid));
-    // (3).toFixed;
 
-    if (midCheck.length == 0) {
+    if (!midCheck) {
       return res.status(400).send("Movie id is not there in database");
     }
-    const userFavouritecheck = await Movies.checkFavourites(userEmail);
-    userFavouritecheck.forEach((id: { favourites: string | null }) => {
-      // if (parseInt(id.toString()) === parseInt(mid)) {
-      //   return res.json({ message: "This movie is already Favourites" });
-      // }
-      // console.log(id);
-      let favouritesArray =
-        id.favourites === null ? [] : JSON.parse(id.favourites);
-      if (favouritesArray.includes(parseInt(mid))) {
-        return res.json({ message: "Already in the Favorites" });
-      }
-    });
-    const userFavoriteList = await Movies.updateFavourites(userEmail, mid);
-    return res.json({ message: `${mid} added to your Favourites` });
+    await Movies.insertFavourites(userEmail, mid);
+    return res.json({ message: `${mid} added to your Favorites` });
   } catch (error) {
     console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
 export const deleteFavourite = async (req: Request, res: Response) => {
   try {
     const userEmail = req.cookies.email;
     const { mid } = req.body;
-    const deleteFav = await Movies.deleteFavourite(mid, userEmail);
-    return res.json({ message: "Deleted from Your Favourites" });
+    const result: any = await Movies.deleteFavourite(mid, userEmail);
+    return { message: `${mid} deleted from favourites` };
   } catch (error) {
     console.error(error);
   }
@@ -142,7 +159,7 @@ export const getMoviesIncome = async (req: Request, res: Response) => {
     const midCheck = await Movies.checkmid(parseInt(mid));
     // (3).toFixed;
 
-    if (midCheck.length == 0) {
+    if (midCheck) {
       return res.status(400).send("Movie id is not there in database");
     }
     if (mid) {
@@ -164,7 +181,7 @@ export const getMoviesFavourties = async (req: Request, res: Response) => {
       let arr = JSON.parse(i.favourites);
       const moviePromises = arr.map(async (i: any) => {
         const movie = await Movies.getMoviesbyID(i);
-        return movie[0];
+        return movie;
       });
       moviesArr.push(...(await Promise.all(moviePromises)));
     })
@@ -176,34 +193,38 @@ export const insertMovieswatchlist = async (req: Request, res: Response) => {
   try {
     const userEmail = req.cookies.email;
     const { mid, id } = req.body;
-    const midCheck = await Movies.checkmid(parseInt(mid));
-    // (3).toFixed;
-
-    if (midCheck.length == 0) {
-      return res.status(400).send("Movie id is not there in database");
-    }
-    const userFavouritecheck = await Movies.checkWatchList(userEmail);
-    userFavouritecheck.forEach((id: any) => {
-      // if (parseInt(id.toString()) === parseInt(mid)) {
-      //   return res.json({ message: "This movie is already Favourites" });
-      // }
-      // console.log(id);
-      let favouritesArray = id.mid === null ? [] : JSON.parse(id.mid);
-      if (favouritesArray.includes(parseInt(mid))) {
-        return res.json({ message: "Already in the Watch list" });
-      }
-    });
-    const userFavoriteList = await Movies.updateWatchList(userEmail, mid, id);
-    return res.json({ message: `${mid} added to your Watch list` });
+    // const midCheck = await Movies.checkmid(parseInt(mid));
+    // // (3).toFixed;
+    // if (midCheck) {
+    //   return res.status(400).send("Movie id is not there in database");
+    // }
+    // const userFavouritecheck = await Movies.checkWatchList(userEmail);
+    // userFavouritecheck.forEach((id: any) => {
+    //   // if (parseInt(id.toString()) === parseInt(mid)) {
+    //   //   return res.json({ message: "This movie is already Favourites" });
+    //   // }
+    //   // console.log(id);
+    //   let favouritesArray = id.mid === null ? [] : JSON.parse(id.mid);
+    //   if (favouritesArray.includes(parseInt(mid))) {
+    //     return res.json({ message: "Already in the Watch list" });
+    //   }
+    // });
+    // const userFavoriteList = await Movies.updateWatchList(userEmail, mid, id);
+    // return res.json({ message: `${mid} added to your Watch list` });
+    const result = await Movies.insertMovieswatchlist(userEmail, mid, id);
+    // console.log(result);
+    return res
+      .status(200)
+      .json({ message: `${mid} is inserted to ${id} WatchList` });
   } catch (error) {
     console.error(error);
   }
 };
 export const getMoviesWatchList = async (req: Request, res: Response) => {
   const { email } = req.cookies;
-  const { id } = req.body;
-  const favouritesId = await Movies.MoviesIdWatchList(email, id);
-  if (favouritesId[0].mid === null) {
+  const { id } = req.params;
+  const favouritesId: any = await Movies.MoviesIdWatchList(email, id);
+  if (favouritesId.mid === null) {
     return res
       .status(404)
       .json({ message: "List Doesnt have any Movies Please Add Movies" });
@@ -215,7 +236,7 @@ export const getMoviesWatchList = async (req: Request, res: Response) => {
       let arr = JSON.parse(i.mid);
       const moviePromises = arr.map(async (i: any) => {
         const movie = await Movies.getMoviesbyID(i);
-        return movie[0];
+        return movie;
       });
       moviesArr.push(...(await Promise.all(moviePromises)));
     })
@@ -228,7 +249,8 @@ export const getMoviesWatchList = async (req: Request, res: Response) => {
 export const deleteMoviesWatchList = async (req: Request, res: Response) => {
   try {
     const userEmail = req.cookies.email;
-    const { mid, id } = req.body;
+    const { id } = req.params;
+    const { mid } = req.body;
     const deleteFav = await Movies.deleteMoviesWatchList(mid, userEmail, id);
     return res.json({ message: "Deleted from Your Watch list" });
   } catch (error) {
@@ -240,27 +262,44 @@ export const accessWatchListpublic = async (req: Request, res: Response) => {
     const { id } = req.params;
     const data: any = await Movies.shareWatchlist(id);
     let movieArr: any[] = [];
-    await Promise.all(
-      data.map(async (i: any) => {
-        let arr = JSON.parse(i.mid);
-
-        if (arr === null) {
-          return res.send({ message: "No Movies are there is Watch List" });
-        }
-        const moviePromises = arr.map(async (i: any) => {
-          const movie = await Movies.getMoviesbyID(i);
-          return movie[0];
-        });
-        movieArr.push(...(await Promise.all(moviePromises)));
-      })
-    );
+    let arr = JSON.parse(data.mid);
+    if (arr === null) {
+      return res.send({ message: "No Movies are there is Watch List" });
+    }
+    const moviePromises = arr.map(async (i: any) => {
+      const movie = await Movies.getMoviesbyID(i);
+      return movie;
+    });
+    movieArr.push(...(await Promise.all(moviePromises)));
 
     return res.status(201).json({
-      Watchlistname: data[0].name,
-      Owner: data[0].email,
+      Watchlistname: data.name,
+      Owner: data.email,
       WatchListMovies: movieArr,
     });
   } catch (error) {
     console.error(error);
   }
 };
+export async function updateWatchlistName(req: Request, res: Response) {
+  const email = req.cookies.email;
+  const { id } = req.params;
+  const { name } = req.body;
+  const result = await Movies.updateWatchlistName(email, id, name);
+  if (!result) {
+    return res.status(400).json({ message: "Failed to Update the Name" });
+  } else {
+    return res.status(200).json({ message: "Updated Successfully!" });
+  }
+}
+export async function deleteWatchlist(req: Request, res: Response) {
+  const email = req.cookies.email;
+  const { id } = req.params;
+
+  const result = await Movies.deleteWatchList(email, id);
+  if (!result) {
+    return res.status(400).json({ message: "Failed to Update the Name" });
+  } else {
+    return res.status(200).json({ message: "Delete Successfully!" });
+  }
+}
