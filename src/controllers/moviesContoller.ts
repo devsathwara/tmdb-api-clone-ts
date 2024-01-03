@@ -92,16 +92,16 @@ export const updateOrInsertFavourites = async (req: Request, res: Response) => {
   try {
     const userEmail = req.cookies.email;
     const { mid } = req.body;
-    const midCheck = await Movies.checkMid(parseInt(mid));
-
+    const midCheck = await Movies.checkMid(mid);
     if (!midCheck) {
       return res.status(400).send("Movie id is not there in database");
     }
     const result = await Movies.insertFavourites(userEmail, mid);
-    if (result.rows.length == 0) {
-      return res.json({ message: `${mid} already there in  your Favorites` });
+    if (result.numAffectedRows) {
+      return res.json({ message: `${mid} added to your Favorites` });
+    } else {
+      return res.json({ message: `${mid} already in your Favorites` });
     }
-    return res.json({ message: `${mid} added to your Favorites` });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });
@@ -193,15 +193,16 @@ export const insertMovieswatchlist = async (req: Request, res: Response) => {
   try {
     const userEmail = req.cookies.email;
     const { mid, id } = req.body;
-    const result = await Movies.insertMoviesWatchlist(userEmail, mid, id);
-    if (result.rows.length == 0) {
-      return res.json({
-        message: `${mid} is already there in ${id} WatchList`,
-      });
+    const midCheck = await Movies.checkMid(mid);
+    if (!midCheck) {
+      return res.status(400).send("Movie id is not there in database");
     }
-    return res
-      .status(200)
-      .json({ message: `${mid} is inserted to ${id} WatchList` });
+    const result = await Movies.insertMoviesWatchlist(userEmail, mid, id);
+    if (result.numAffectedRows) {
+      return res.json({ message: `${mid} added to your WatchList` });
+    } else {
+      return res.json({ message: `${mid} already in your WatchList` });
+    }
   } catch (error) {
     console.error(error);
   }
@@ -236,6 +237,7 @@ export const deleteMoviesWatchList = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { mid } = req.body;
     const deleteFav = await Movies.deleteMoviesWatchList(mid, userEmail, id);
+    console.log(deleteFav);
     return res.json({ message: "Deleted from Your Watch list" });
   } catch (error) {
     console.error(error);
@@ -300,6 +302,87 @@ export async function GenreRatings(req: Request, res: Response) {
     } else {
       return res.status(200).json({ GenreRating: result.rows });
     }
+  } catch (error) {
+    console.error(error);
+  }
+}
+export async function LikeDislikeMovies(req: Request, res: Response) {
+  try {
+    let { type } = req.body;
+    const email = req.cookies.email;
+    let { mid } = req.params;
+    let data: any = {
+      mid: parseInt(mid),
+      user_email: email,
+      reaction: type,
+      created_at: new Date(),
+      updated_at: new Date(),
+    };
+    const result = await Movies.LikeDislikeMovies(data);
+    if (result) {
+      res.status(200).json({ message: `${mid} ${type} by ${email}` });
+    }
+  } catch (error) {
+    console.error(error);
+  }
+}
+export async function RatingsMovies(req: Request, res: Response) {
+  try {
+    let { Ratings } = req.body;
+    const email = req.cookies.email;
+    let { mid } = req.params;
+    Ratings.map(async (i: any) => {
+      let data: any = {
+        mid: parseInt(mid),
+        email: email,
+        types: i.type,
+        rating: i.ratings,
+        created_at: new Date(),
+        updated_at: new Date(),
+      };
+      const result = await Movies.RatingsMovies(data);
+    });
+    res.status(200).json({ message: `${mid} rated by ${email}` });
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+export async function CommentMovies(req: Request, res: Response) {
+  try {
+    const email = req.cookies.email;
+    let { mid } = req.params;
+    let { comment } = req.body;
+    let data: any = {
+      movie_id: mid,
+      user_email: email,
+      comment: comment,
+      parent_id: null,
+      created_at: new Date(),
+      updated_at: new Date(),
+    };
+    const result = await Movies.CommentMovies(data);
+    console.log(result);
+    res.status(200).send("The comment was added successfully");
+  } catch (error) {
+    console.error(error);
+  }
+}
+export async function ReplyCommentMovies(req: Request, res: Response) {
+  try {
+    const email = req.cookies.email;
+    let { mid, cid } = req.params;
+    let { comment } = req.body;
+    let data: any = {
+      movie_id: mid,
+      user_email: email,
+      comment: comment,
+      parent_id: cid,
+      created_at: new Date(),
+      updated_at: new Date(),
+    };
+    const result = await Movies.CommentMovies(data);
+    res.status(200).send("Reply  comment was added successfully");
   } catch (error) {
     console.error(error);
   }

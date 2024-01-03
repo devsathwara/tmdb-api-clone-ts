@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jan 03, 2024 at 05:48 AM
+-- Generation Time: Jan 03, 2024 at 09:19 AM
 -- Server version: 10.4.28-MariaDB
 -- PHP Version: 8.2.4
 
@@ -71,8 +71,8 @@ CREATE TABLE `movies-info` (
 
 CREATE TABLE `movies_ratings` (
   `id` int(11) NOT NULL,
-  `movie_id` int(11) NOT NULL,
-  `user_email` varchar(255) NOT NULL,
+  `mid` int(11) NOT NULL,
+  `email` varchar(255) NOT NULL,
   `types` varchar(255) DEFAULT NULL,
   `rating` int(11) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
@@ -89,7 +89,7 @@ CREATE TABLE `movie_comments` (
   `id` int(11) NOT NULL,
   `movie_id` int(11) DEFAULT NULL,
   `user_email` varchar(255) DEFAULT NULL,
-  `comment` text DEFAULT NULL,
+  `comment` longtext NOT NULL,
   `parent_id` int(11) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp()
@@ -166,8 +166,8 @@ ALTER TABLE `movies-info`
 --
 ALTER TABLE `movies_ratings`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `movie_id` (`movie_id`),
-  ADD KEY `user_email` (`user_email`);
+  ADD KEY `movie_id` (`mid`),
+  ADD KEY `user_email` (`email`);
 
 --
 -- Indexes for table `movie_comments`
@@ -247,8 +247,8 @@ ALTER TABLE `watch-list`
 -- Constraints for table `movies_ratings`
 --
 ALTER TABLE `movies_ratings`
-  ADD CONSTRAINT `movies_ratings_ibfk_1` FOREIGN KEY (`movie_id`) REFERENCES `movies-info` (`mid`) ON DELETE NO ACTION ON UPDATE NO ACTION,
-  ADD CONSTRAINT `movies_ratings_ibfk_2` FOREIGN KEY (`user_email`) REFERENCES `users` (`email`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+  ADD CONSTRAINT `movies_ratings_ibfk_1` FOREIGN KEY (`mid`) REFERENCES `movies-info` (`mid`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  ADD CONSTRAINT `movies_ratings_ibfk_2` FOREIGN KEY (`email`) REFERENCES `users` (`email`) ON DELETE NO ACTION ON UPDATE NO ACTION;
 
 --
 -- Constraints for table `movie_comments`

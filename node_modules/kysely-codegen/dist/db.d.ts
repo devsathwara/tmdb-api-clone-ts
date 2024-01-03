@@ -55,12 +55,12 @@ export interface MoviesInfo {
 
 export interface MoviesRatings {
   created_at: Generated<Date | null>;
+  email: string;
   id: Generated<number>;
-  movie_id: number;
+  mid: number;
   rating: Generated<number | null>;
   types: Generated<string | null>;
   updated_at: Generated<Date>;
-  user_email: string;
 }
 
 export interface Users {

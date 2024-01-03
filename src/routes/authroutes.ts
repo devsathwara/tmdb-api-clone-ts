@@ -10,5 +10,5 @@ router.get("/logout", userController.logoutUser);
 router.get("/verify-email/:token", userController.verifyEmail);
 router.get("/forgot-password", userController.forgotPassword);
 router.get("/reset-password/:token", userController.resetPassword);
-router.get("/change-password", authCheck, userController.changePassword);
+router.post("/change-password", authCheck, userController.changePassword);
 export default router;

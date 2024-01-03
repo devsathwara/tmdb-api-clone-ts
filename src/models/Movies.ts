@@ -76,16 +76,14 @@ export const insertGenre = async (data: any[]): Promise<any> => {
     console.warn("No data provided for insertion.");
     return;
   }
-  // console.log(data);
+
   try {
     const result = await db
       .insertInto("movies-genre")
       .values(data)
       .ignore()
       .execute();
-    // if (result) {
-    //   console.log(`${result.length} row(s) inserted.`);
-    // }
+
     return result;
   } catch (error: any) {
     console.error("SQL Error:", error.message);
@@ -111,41 +109,6 @@ export const accessListUserWise = async (email: any): Promise<any> => {
     .execute();
   return list;
 };
-
-// export async function updateFavourites(email: any, movieId: number) {
-//   const movie: any = await db
-//     .selectFrom("users")
-//     .select("favourites")
-//     .where("email", "=", email)
-//     .executeTakeFirstOrThrow();
-//   let favMovies = JSON.parse(movie.favourites, (key, value) =>
-//     typeof value === "bigint" ? parseInt(value.toString()) : value
-//   );
-
-//   if (!favMovies) {
-//     favMovies = [];
-//   }
-
-//   const movieIndex = favMovies.findIndex(
-//     (id: number) => id === Number(movieId)
-//   );
-
-//   if (movieIndex === -1) {
-//     favMovies.push(Number(movieId));
-//   } else {
-//     favMovies = favMovies.filter((id: number) => id !== Number(movieId));
-//   }
-
-//   const result = await db
-//     .updateTable("users")
-//     .set({
-//       favourites: JSON.stringify(favMovies),
-//     })
-//     .where("email", "=", email)
-//     .execute();
-
-//   return result;
-// }
 export async function insertFavourites(email: any, mid: number) {
   const query = sql<any>`
   UPDATE users
@@ -188,9 +151,9 @@ export async function MoviesIdWatchList(email: any, id: any) {
 export async function checkMid(movieID: any) {
   const list = await db
     .selectFrom("movies-info")
-    .select("title")
+    .selectAll()
     .where("mid", "=", parseInt(`${movieID}`))
-    .executeTakeFirst();
+    .execute();
   return list;
 }
 export async function deleteFavourite(mid: any, email: any) {
@@ -264,19 +227,27 @@ export const getMoviesbyID = async (mid: any) => {
     .executeTakeFirst();
   return list;
 };
-export const insertMoviesWatchlist = async (email: any, mid: any, id: any) => {
+export async function insertMoviesWatchlist(email: any, mid: any, id: any) {
+  console.log(`UPDATE \`watch-list\`
+  SET mid = JSON_ARRAY_APPEND(
+    COALESCE(mid, JSON_ARRAY()),
+    '$',
+    ${mid}
+  )
+  WHERE email = '${email}' AND id=${id}
+  AND JSON_SEARCH(COALESCE(mid, JSON_ARRAY()), 'one', ${mid}) IS NULL`);
   const result = sql<any>`
-  UPDATE users
-  SET favourites = JSON_ARRAY_APPEND(
-    COALESCE(favourites, JSON_ARRAY()),
+  UPDATE \`watch-list\`
+  SET mid = JSON_ARRAY_APPEND(
+    COALESCE(mid, JSON_ARRAY()),
     '$',
     ${mid}
   )
   WHERE email = ${email} AND id=${id}
-  AND JSON_SEARCH(COALESCE(favourites, JSON_ARRAY()), 'one', ${mid}) IS NULL
+  AND JSON_SEARCH(COALESCE(mid, JSON_ARRAY()), 'one', ${mid}) IS NULL
   `.execute(db);
   return result;
-};
+}
 
 // export async function updateWatchList(email: any, id: any) {
 //   // const movie: any = await db
@@ -357,5 +328,74 @@ FROM \`movies-info\` mi
 JOIN \`movies-genre\` mg ON JSON_UNQUOTE(JSON_EXTRACT(mi.genre_ids, "$[0]")) = mg.id
 WHERE JSON_UNQUOTE(JSON_EXTRACT(mi.genre_ids, "$[0]")) IN (${id})
 GROUP BY genre_id, genre_name;`.execute(db);
+  return result;
+}
+export async function LikeDislikeMovies(data: any) {
+  if (!data) {
+    console.warn("No data provided for insertion.");
+    return;
+  }
+  try {
+    const checkLikeDislike = await db
+      .selectFrom("movie_likes")
+      .selectAll()
+      .where("mid", "=", data.mid)
+      .executeTakeFirst();
+    if (checkLikeDislike) {
+      const result = await db
+        .updateTable("movie_likes")
+        .set({
+          reaction: data.reaction,
+          updated_at: new Date(),
+        })
+        .where("mid", "=", data.mid)
+        .executeTakeFirst();
+      return result;
+    } else {
+      const result = await db.insertInto("movie_likes").values(data).execute();
+      return result;
+    }
+  } catch (error: any) {
+    console.error("SQL Error:", error.message);
+    throw error;
+  }
+}
+export async function RatingsMovies(data: any) {
+  if (!data) {
+    console.warn("No data provided for insertion.");
+    return;
+  }
+  try {
+    const checkRatings = await db
+      .selectFrom("movies_ratings")
+      .selectAll()
+      .where("mid", "=", data.mid)
+      .where("email", "=", data.email)
+      .executeTakeFirst();
+    if (checkRatings) {
+      const result = await db
+        .updateTable("movies_ratings")
+        .set({
+          rating: data.rating,
+          updated_at: new Date(),
+        })
+        .where("mid", "=", data.mid)
+        .where("types", "=", data.types)
+        .execute();
+      return result;
+    } else {
+      const result = await db
+        .insertInto("movies_ratings")
+        .values(data)
+        .execute();
+      return result;
+    }
+  } catch (error: any) {
+    console.error("SQL Error:", error.message);
+    throw error;
+  }
+}
+export async function CommentMovies(data: any) {
+  const result = await db.insertInto("movie_comments").values(data).execute();
   return result;
 }

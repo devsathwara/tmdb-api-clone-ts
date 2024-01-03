@@ -3,6 +3,7 @@ import * as movies from "../controllers/moviesContoller";
 import {
   authenticationMiddleware,
   authCheck,
+  checkVerifyEmail,
 } from "../middleware/authMiddleware";
 const router: Router = express.Router();
 
@@ -10,6 +11,7 @@ router.get("/getMoviesbyPage/:pagenumber", movies.displayMoviesbyPages);
 
 router.post("/create-watch-list", authCheck, movies.createWatchList);
 router.post("/insert-watch-list", authCheck, movies.insertMovieswatchlist);
+
 router.get("/access-favourite-list", authCheck, movies.getMoviesFavourties);
 router.get("/movies-watch-list/:id", authCheck, movies.getMoviesWatchList);
 router.get("/access-watch-list", authCheck, movies.accessListUser);
@@ -28,4 +30,16 @@ router.get("/genre-Ratings", movies.GenreRatings);
 router.get("/watch-list-share/:id", movies.accessWatchListpublic);
 router.put("/updateWatchListName/:id", authCheck, movies.updateWatchlistName);
 router.delete("/deleteWatchList/:id", authCheck, movies.deleteWatchlist);
+router.post(
+  "/movies-likeDislike/:mid",
+  checkVerifyEmail,
+  movies.LikeDislikeMovies
+);
+router.post("/movies-Ratings/:mid", checkVerifyEmail, movies.RatingsMovies);
+router.post("/comment-movies/:mid", checkVerifyEmail, movies.CommentMovies);
+router.post(
+  "/reply-comment-movies/:mid/:cid",
+  checkVerifyEmail,
+  movies.ReplyCommentMovies
+);
 export default router;
