@@ -144,13 +144,10 @@ export const moviesReleasedin3Years = async (req: Request, res: Response) => {
   try {
     const { id }: any = req.params;
     if (id) {
-      const data = await Movies.GenremoviesReleasedin3Years(id);
-      // data.rows.map((i) => {
-      //   console.log(i.ReleaseYear);
-      // });
+      const data = await Movies.GenreMoviesReleasedIn3Years(id);
       return res.json(data.rows);
     }
-    const releasedMovies = await Movies.moviesReleasedin3Years();
+    const releasedMovies = await Movies.MoviesReleasedIn3Years();
     return res.status(200).json(releasedMovies);
   } catch (error) {
     console.error(error);
@@ -166,7 +163,7 @@ export const getMoviesIncome = async (req: Request, res: Response) => {
       return res.status(400).send("Movie id is not there in database");
     }
     if (mid) {
-      const income = await Movies.getProfitLossMoviesbyId(mid);
+      const income = await Movies.getMoviesGrossIncome(mid);
       return res.status(200).json(income);
     } else {
       return res.status(404).json({ message: "Movie id required" });
@@ -196,26 +193,7 @@ export const insertMovieswatchlist = async (req: Request, res: Response) => {
   try {
     const userEmail = req.cookies.email;
     const { mid, id } = req.body;
-    // const midCheck = await Movies.checkmid(parseInt(mid));
-    // // (3).toFixed;
-    // if (midCheck) {
-    //   return res.status(400).send("Movie id is not there in database");
-    // }
-    // const userFavouritecheck = await Movies.checkWatchList(userEmail);
-    // userFavouritecheck.forEach((id: any) => {
-    //   // if (parseInt(id.toString()) === parseInt(mid)) {
-    //   //   return res.json({ message: "This movie is already Favourites" });
-    //   // }
-    //   // console.log(id);
-    //   let favouritesArray = id.mid === null ? [] : JSON.parse(id.mid);
-    //   if (favouritesArray.includes(parseInt(mid))) {
-    //     return res.json({ message: "Already in the Watch list" });
-    //   }
-    // });
-    // const userFavoriteList = await Movies.updateWatchList(userEmail, mid, id);
-    // return res.json({ message: `${mid} added to your Watch list` });
     const result = await Movies.insertMoviesWatchlist(userEmail, mid, id);
-    // console.log(result);
     if (result.rows.length == 0) {
       return res.json({
         message: `${mid} is already there in ${id} WatchList`,
@@ -266,7 +244,7 @@ export const deleteMoviesWatchList = async (req: Request, res: Response) => {
 export const accessWatchListpublic = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const data: any = await Movies.shareWatchlist(id);
+    const data: any = await Movies.shareWatchList(id);
     let movieArr: any[] = [];
     let arr = JSON.parse(data.mid);
     if (arr === null) {
@@ -299,13 +277,30 @@ export async function updateWatchlistName(req: Request, res: Response) {
   }
 }
 export async function deleteWatchlist(req: Request, res: Response) {
-  const email = req.cookies.email;
-  const { id } = req.params;
+  try {
+    const email = req.cookies.email;
+    const { id } = req.params;
 
-  const result = await Movies.deleteWatchList(email, id);
-  if (!result) {
-    return res.status(400).json({ message: "Failed to Update the Name" });
-  } else {
-    return res.status(200).json({ message: "Delete Successfully!" });
+    const result = await Movies.deleteWatchList(email, id);
+    if (!result) {
+      return res.status(400).json({ message: "Failed to Update the Name" });
+    } else {
+      return res.status(200).json({ message: "Delete Successfully!" });
+    }
+  } catch (error) {
+    console.error(error);
+  }
+}
+export async function GenreRatings(req: Request, res: Response) {
+  const { id } = req.body;
+  try {
+    const result = await Movies.genreRatings(id);
+    if (!result) {
+      return res.status(400).json({ message: "Genres is invalid" });
+    } else {
+      return res.status(200).json({ GenreRating: result.rows });
+    }
+  } catch (error) {
+    console.error(error);
   }
 }

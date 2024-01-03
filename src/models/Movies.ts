@@ -216,19 +216,19 @@ export const countryRevenue = async (countries: any) => {
   `.execute(db);
   return result;
 };
-export const moviesReleasedin3Years = async () => {
+export const MoviesReleasedIn3Years = async () => {
   const result = sql<any>`
   SELECT YEAR(release_date) AS ReleaseYear, WEEKOFYEAR(release_date) AS Week, COUNT(*) AS NumberOfMovies FROM \`movies-info\` WHERE release_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 3 YEAR) AND CURDATE() GROUP BY YEAR(release_date), WEEKOFYEAR(release_date);
   `.execute(db);
   return result;
 };
-export const GenremoviesReleasedin3Years = async (genreId: any) => {
+export const GenreMoviesReleasedIn3Years = async (genreId: any) => {
   const result = sql<any>`
   SELECT YEAR(mi.release_date) AS ReleaseYear, WEEKOFYEAR(mi.release_date) AS Week, mg.name AS GenreName, COUNT(*) AS NumberOfMovies FROM \`movies-info\` mi JOIN \`movies-genre\` mg ON FIND_IN_SET(mg.id, mi.genre_ids) WHERE mi.release_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 3 YEAR) AND CURDATE() AND mg.id = ${genreId} GROUP BY YEAR(mi.release_date), WEEKOFYEAR(mi.release_date);
   `.execute(db);
   return result;
 };
-export const getProfitLossMoviesbyId = async (mid: any) => {
+export const getMoviesGrossIncome = async (mid: any) => {
   const result = sql<any>`  SELECT
   title,
   budget,
@@ -335,7 +335,7 @@ export async function deleteWatchList(email: any, id: any) {
     .execute();
   return result;
 }
-export async function shareWatchlist(id: any) {
+export async function shareWatchList(id: any) {
   const result = await db
     .selectFrom("watch-list")
     .selectAll()
@@ -347,4 +347,15 @@ export async function shareWatchlist(id: any) {
     WHERE id=${id}`.execute(db);
     return result;
   }
+}
+export async function genreRatings(id: any) {
+  const result = sql<any>`SELECT
+  JSON_UNQUOTE(JSON_EXTRACT(mi.genre_ids, "$[0]")) as genre_id,
+  mg.name as genre_name,
+  SUM(mi.popularity) as popularity
+FROM \`movies-info\` mi
+JOIN \`movies-genre\` mg ON JSON_UNQUOTE(JSON_EXTRACT(mi.genre_ids, "$[0]")) = mg.id
+WHERE JSON_UNQUOTE(JSON_EXTRACT(mi.genre_ids, "$[0]")) IN (${id})
+GROUP BY genre_id, genre_name;`.execute(db);
+  return result;
 }

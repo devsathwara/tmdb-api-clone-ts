@@ -24,6 +24,7 @@ router.get("/country-revenues", movies.countriesRevenue);
 router.get("/chart-movies/:id", movies.moviesReleasedin3Years);
 router.get("/chart-movies", movies.moviesReleasedin3Years);
 router.get("/income-movies", movies.getMoviesIncome);
+router.get("/genre-Ratings", movies.GenreRatings);
 router.get("/watch-list-share/:id", movies.accessWatchListpublic);
 router.put("/updateWatchListName/:id", authCheck, movies.updateWatchlistName);
 router.delete("/deleteWatchList/:id", authCheck, movies.deleteWatchlist);

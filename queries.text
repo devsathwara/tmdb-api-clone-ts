@@ -4,3 +4,11 @@ SELECT YEAR(release_date) AS ReleaseYear, WEEKOFYEAR(release_date) AS Week, COUN
 
 Genre filter:
 SELECT m.*, g.name FROM `movies-info` m JOIN ( SELECT id, name FROM `movies-genre` as g WHERE id IN (35,10751,14)) g ON FIND_IN_SET(g.id, m.genre_ids) WHERE g.name = 'Comedy' LIMIT 0, 25;
+
+
+SELECT
+      JSON_UNQUOTE(JSON_EXTRACT(genre_ids, "$[0]")) as genre_ids,
+      SUM(popularity) as popularity
+    FROM  `movies-info`
+    WHERE JSON_UNQUOTE(JSON_EXTRACT(genre_ids, "$[0]")) IN (12,18)
+    GROUP BY JSON_UNQUOTE(JSON_EXTRACT(genre_ids, "$[0]"))
