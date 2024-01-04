@@ -1,15 +1,61 @@
 import express, { NextFunction, Request, Response, request } from "express";
 import * as Movies from "../models/Movies";
-export const displayMoviesbyPages = async (
+export const displayMovies = async (
   req: Request,
   res: Response
 ): Promise<any> => {
   try {
+    const currentDate: Date = new Date();
+    const formattedCurrentDate: string = new Intl.DateTimeFormat("en-US", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(currentDate);
     const pageNumber: number = parseInt(req.params.pagenumber);
+    const {
+      genre,
+      countries,
+      languages,
+      name,
+      adult,
+      sort_title,
+      sort_popularity,
+      sort_vote_Average,
+      fromDate,
+      toDate,
+      runtimeFrom,
+      runtimeTo,
+      voteAverageFrom,
+      voteAverageTo,
+      voteCountFrom,
+      voteCountTo,
+      keywordsID,
+    } = req.body || {};
+    const { limit } = req.body;
     if (!pageNumber || isNaN(pageNumber)) {
       return res.status(400).send({ error: "Invalid page number!" });
     }
-    const moviesData = await Movies.getMoviesbyPage(pageNumber);
+    const moviesData = await Movies.getMovies(
+      pageNumber,
+      limit,
+      genre || null,
+      countries || null,
+      languages || null,
+      name || null,
+      adult || null,
+      sort_popularity || null,
+      sort_title || null,
+      sort_vote_Average || null,
+      fromDate || null,
+      toDate || null,
+      runtimeFrom || null,
+      runtimeTo || null,
+      voteAverageFrom || null,
+      voteAverageTo || null,
+      voteCountFrom || null,
+      voteCountTo || null,
+      keywordsID || null
+    );
     if (moviesData) {
       return res.json({ page: pageNumber, Movies: moviesData });
     }
@@ -60,7 +106,6 @@ export const accessListUser = async (req: Request, res: Response) => {
     console.error(error);
   }
 };
-// export const insertFavourites = async (req: Request, res: Response) => {
 //   try {
 //     const userEmail = req.cookies.email;
 //     const { mid } = req.body;
@@ -362,6 +407,7 @@ export async function CommentMovies(req: Request, res: Response) {
       updated_at: new Date(),
     };
     const result = await Movies.CommentMovies(data);
+
     res.status(200).send("The comment was added successfully");
   } catch (error) {
     console.error(error);

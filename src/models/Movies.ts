@@ -1,3 +1,4 @@
+import { raw } from "mysql2";
 import { db } from "../db/database";
 import { MoviesInfo } from "../db/db";
 import {
@@ -8,39 +9,91 @@ import {
   CompiledQuery,
   createRawBuilder,
 } from "kysely";
-interface MovieData {
-  mid: any;
-  adult: any;
-  backdrop_path: any;
-  genre_ids: any;
-  original_language: any;
-  original_title: any;
-  overview: any;
-  popularity: any;
-  poster_path: any;
-  release_date: any;
-  title: any;
-  video: any;
-  vote_average: any;
-  vote_count: any;
-  external_ids: any; // Adjust the type according to your actual data structure
-  status: any;
-  revenue: any;
-  runtime: any;
-  budget: any;
-}
 export const createMovies = async (data: any[]): Promise<void> => {
   if (data.length == 0) {
     console.warn("No data provided for insertion.");
     return;
   }
-  // console.log(data);
+
   try {
-    const result = await db
-      .insertInto("movies-info")
-      .values(data)
-      .ignore()
-      .execute();
+    for (const record of data) {
+      const result = await sql<any>`
+        INSERT INTO \`movies-info\`(
+          mid,
+          adult,
+          backdrop_path,
+          genre_ids,
+          original_language,
+          original_title,
+          overview,
+          popularity,
+          poster_path,
+          release_date,
+          title,
+          video,
+          vote_average,
+          vote_count,
+          external_ids,
+          status,
+          revenue,
+          runtime,
+          budget,
+          countries,
+          created_at,
+          updated_at,
+          keywords
+      ) 
+        VALUES (
+          ${record.mid},
+          ${record.adult},
+          ${record.backdrop_path},
+          ${record.genre_ids},
+          ${record.original_language},
+          ${record.original_title},
+          ${record.overview},
+          ${record.popularity},
+          ${record.poster_path},
+          ${record.release_date},
+          ${record.title},
+          ${record.video},
+          ${record.vote_average},
+          ${record.vote_count},
+          ${record.external_ids},
+          ${record.status},
+          ${record.revenue},
+          ${record.runtime},
+          ${record.budget},
+          ${record.countries},
+          ${record.created_at},
+          ${record.updated_at},
+          ${record.keywords}
+        )
+        ON DUPLICATE KEY UPDATE
+          mid = VALUES(mid),
+          adult = VALUES(adult),
+          backdrop_path = VALUES(backdrop_path),
+          genre_ids = VALUES(genre_ids),
+          original_language = VALUES(original_language),
+          original_title = VALUES(original_title),
+          overview = VALUES(overview),
+          popularity = VALUES(popularity),
+          poster_path = VALUES(poster_path),
+          release_date = VALUES(release_date),
+          title = VALUES(title),
+          video = VALUES(video),
+          vote_average = VALUES(vote_average),
+          vote_count = VALUES(vote_count),
+          external_ids = VALUES(external_ids),
+          status = VALUES(status),
+          revenue = VALUES(revenue),
+          runtime = VALUES(runtime),
+          budget = VALUES(budget),
+          countries = VALUES(countries),
+          created_at=VALUES(created_at),
+          updated_at = VALUES(updated_at),
+          keywords=VALUES(keywords);
+      `.execute(db);
+    }
     // if (result) {
     //   console.log(`${result.length} row(s) inserted.`);
     // }
@@ -50,25 +103,83 @@ export const createMovies = async (data: any[]): Promise<void> => {
   }
 };
 
-export const getMoviesbyPage = async (pageNumber: any): Promise<any> => {
-  // if (pageNumber == 1) {
-  //   const movies = await db
-  //     .selectFrom("movies-info")
-  //     .selectAll()
-  //     .orderBy("id")
-  //     .limit(20)
-  //     .execute();
-  //   return movies;
-  // }
-  const limit: any = 20;
+export const getMovies = async (
+  pageNumber: any,
+  limit: any,
+  genres: any,
+  countries: any,
+  language: any,
+  name: any,
+  adult: any,
+  sort_popularity: any,
+  sort_title: any,
+  sort_voteAverage: any,
+  fromDate: any,
+  toDate: any,
+  runtimeFrom: any,
+  runtimeTo: any,
+  voteAverageFrom: any,
+  voteAverageTo: any,
+  voteCountFrom: any,
+  voteCountTo: any,
+  keywordId: any
+): Promise<any> => {
+  console.log(typeof keywordId);
   let offset: any = pageNumber == 1 ? 0 : (pageNumber - 1) * limit;
-  const movies = await db
-    .selectFrom("movies-info")
-    .selectAll()
-    .orderBy("id")
-    .limit(limit)
-    .offset(offset) //offset ternary operator  used
-    .execute();
+  const movies = sql<any>`
+  SELECT *
+  FROM \`movies-info\`
+  WHERE 
+  (${
+    genres ? sql`JSON_CONTAINS(\`genre_ids\`, JSON_ARRAY(${genres}))` : sql`1`
+  })
+  AND (${
+    countries
+      ? sql`JSON_CONTAINS(\`countries\`, JSON_ARRAY(${countries}))`
+      : sql`1`
+  })
+  AND (${language ? sql`\`original_language\` = ${language}` : sql`1`})
+  AND (${name ? sql`\`title\` = ${name}` : sql`1`})
+  AND (${adult ? sql`\`adult\` = ${adult}` : sql`1`})
+  AND (${fromDate ? sql`\`release_date\` >= ${fromDate}` : sql`1`})
+  AND (${runtimeFrom ? sql`\`runtime\` >= ${runtimeFrom}` : sql`1`})
+  AND (${runtimeTo ? sql`\`runtime\` <= ${runtimeTo}` : sql`1`})
+  AND (${
+    voteAverageFrom ? sql`\`vote_average\` >= ${voteAverageFrom}` : sql`1`
+  })
+  AND (${voteAverageTo ? sql`\`vote_average\` <= ${voteAverageTo}` : sql`1`})
+  AND (${voteCountFrom ? sql`\`vote_count\` >= ${voteCountFrom}` : sql`1`})
+  AND (${voteCountTo ? sql`\`vote_count\` <= ${voteCountTo}` : sql`1`})
+  AND (${toDate ? sql`\`release_date\` <= ${toDate}` : sql`1`})
+  AND (${
+    keywordId
+      ? sql`${keywordId
+          .map(
+            (id: any) =>
+              sql`JSON_SEARCH(\`keywords\`, 'one', ${id}, NULL, '$[*].id') IS NOT NULL`
+          )
+          .reduce((prev: any, curr: any) => sql`${prev} OR ${curr}`)}`
+      : sql`1`
+  })
+  
+  ORDER BY
+  ${
+    sort_popularity === "popu.desc"
+      ? sql`\`popularity\` DESC`
+      : sort_popularity === "popu.asc"
+      ? sql`\`popularity\` ASC`
+      : sort_title === "title.asc"
+      ? sql`\`title\` ASC`
+      : sort_title === "title.desc"
+      ? sql`\`title\` DESC`
+      : sort_voteAverage === "vote_average.asc"
+      ? sql`\`vote_average\` ASC`
+      : sort_voteAverage === "vote_average.desc"
+      ? sql`\`vote_average\` DESC`
+      : sql`id`
+  }
+  LIMIT ${limit != null ? limit : 20}
+  OFFSET ${offset};`.execute(db);
   return movies;
 };
 export const insertGenre = async (data: any[]): Promise<any> => {
@@ -205,20 +316,6 @@ FROM \`movies-info\`
 WHERE mid = ${mid}`.execute(db);
   return result;
 };
-export const getmoviesbyGenre = async (genre: any, genres: any[]) => {
-  const result = sql<any>`SELECT m.*, g.name
-  FROM \`movies-info\` m
-  JOIN (
-    SELECT id, name
-    FROM \`movies-genre\`
-    WHERE id IN (35, 10751, 14)
-  ) g ON FIND_IN_SET(g.id, m.genre_ids)
-  WHERE g.name = 'Comedy'
-  ORDER BY m.id
-  LIMIT 20 OFFSET ((pageNumber - 1) * 20);
-  `.execute(db);
-  return result;
-};
 export const getMoviesbyID = async (mid: any) => {
   const list = await db
     .selectFrom("movies-info")
@@ -248,37 +345,6 @@ export async function insertMoviesWatchlist(email: any, mid: any, id: any) {
   `.execute(db);
   return result;
 }
-
-// export async function updateWatchList(email: any, id: any) {
-//   // const movie: any = await db
-//   //   .selectFrom("watch-list")
-//   //   .select("mid")
-//   //   .where("email", "=", email)
-//   //   .where("id", "=", parseInt(`${id}`))
-//   //   .executeTakeFirstOrThrow();
-//   // let favMovies = JSON.parse(movie.mid, (key, value) =>
-//   //   typeof value === "bigint" ? parseInt(value.toString()) : value
-//   // );
-//   // if (!favMovies) {
-//   //   favMovies = [];
-//   // }
-//   // const movieIndex = favMovies.findIndex(
-//   //   (id: number) => id === Number(movieId)
-//   // );
-//   // if (movieIndex === -1) {
-//   //   favMovies.push(Number(movieId));
-//   // } else {
-//   //   favMovies = favMovies.filter((id: number) => id !== Number(movieId));
-//   // }
-//   // const result = await db
-//   //   .updateTable("watch-list")
-//   //   .set({
-//   //     mid: JSON.stringify(favMovies),
-//   //   })
-//   //   .where("email", "=", email)
-//   //   .where("id", "=", parseInt(`${id}`))
-//   //   .executeTakeFirst();
-// }
 export async function updateWatchlistName(email: any, id: any, name: any) {
   const result = sql<any>`
     UPDATE \`watch-list\`

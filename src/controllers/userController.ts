@@ -62,7 +62,7 @@ export const registerUser = async (
         "Email Verification Link",
         `Hello👋,${username} 
       Please verify your email by clicking below link`,
-        `<a>https://localhost:9898/user/verify-email/${token}</a>`
+        `<a>${config.env.app.appUrl}/user/verify-email/${token}</a>`
       );
 
       // console.log("Message sent: %s", info.messageId);
@@ -196,7 +196,7 @@ export const forgotPassword = async (
     // Associate the reset token with the user in the database
     // await User.updateResetToken(email, resetToken);
 
-    const resetLink = `http://localhost:9898/user/reset-password/${resetToken}`;
+    const resetLink = `${config.env.app.appUrl}/user/reset-password/${resetToken}`;
     // Send the reset link to the user's email
     const info = await sendEmail(
       config.env.app.email,

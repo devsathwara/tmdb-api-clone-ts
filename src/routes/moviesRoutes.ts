@@ -7,7 +7,7 @@ import {
 } from "../middleware/authMiddleware";
 const router: Router = express.Router();
 
-router.get("/getMoviesbyPage/:pagenumber", movies.displayMoviesbyPages);
+router.get("/getMovies/:pagenumber", movies.displayMovies);
 
 router.post("/create-watch-list", authCheck, movies.createWatchList);
 router.post("/insert-watch-list", authCheck, movies.insertMovieswatchlist);

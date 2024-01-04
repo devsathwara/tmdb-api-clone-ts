@@ -18,6 +18,9 @@ export const config = {
       emailHost: process.env.EMAILHOST,
       emailUser: process.env.EMAILUSER || "",
       emailPass: process.env.EMAILPASS || "",
+      appUrl: process.env.APP_URL || "",
+      tmdbApiKey: process.env.TMDB_API_KEY || "",
+      ApiUrl: process.env.API_URL,
     },
   },
 };
