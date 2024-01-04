@@ -362,7 +362,6 @@ export async function CommentMovies(req: Request, res: Response) {
       updated_at: new Date(),
     };
     const result = await Movies.CommentMovies(data);
-    console.log(result);
     res.status(200).send("The comment was added successfully");
   } catch (error) {
     console.error(error);
