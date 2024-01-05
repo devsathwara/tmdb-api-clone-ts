@@ -73,4 +73,3 @@ export const checkVerifyEmail = async (
     console.error(error);
   }
 };
-// export default authenticationMiddleware;

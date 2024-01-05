@@ -116,7 +116,7 @@ export const getMovies = async (
   keywordId: any
 ): Promise<any> => {
   // let offset: any = pageNumber == 1 ? 0 : (pageNumber - 1) * limit;
-  name = name + "%";
+  // name = name + "%";
   const movies = sql<any>`
   SELECT *
   FROM \`movies-info\`
@@ -134,7 +134,7 @@ export const getMovies = async (
   AND (${language ? sql`\`original_language\` = ${language}` : sql`1`})
   AND (${
     name && typeof name === "string" && name.length > 0
-      ? sql`\`title\` LIKE ${name}`
+      ? sql`\`title\` LIKE ${name + "%"}`
       : sql`1`
   })
   AND (${adult ? sql`\`adult\` = ${adult}` : sql`1`})
@@ -182,7 +182,7 @@ export const getMovies = async (
       ? sql`\`vote_average\` ASC`
       : sort_voteAverage === "vote_average.desc"
       ? sql`\`vote_average\` DESC`
-      : sql`id`
+      : sql`\`id\` ASC` // Default ORDER BY
   }
   LIMIT ${limit != null ? parseInt(limit) : 20}
   OFFSET ${

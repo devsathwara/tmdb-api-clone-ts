@@ -2,23 +2,15 @@ import { db } from "../db/database";
 import { MoviesInfo } from "../db/db";
 import { sql } from "kysely";
 export async function insertMoviesWatchlist(email: any, mid: any, id: any) {
-  console.log(`UPDATE \`watch-list\`
-    SET mid = JSON_ARRAY_APPEND(
-      COALESCE(mid, JSON_ARRAY()),
-      '$',
-      ${mid}
-    )
-    WHERE email = '${email}' AND id=${id}
-    AND JSON_SEARCH(COALESCE(mid, JSON_ARRAY()), 'one', ${mid}) IS NULL`);
   const result = sql<any>`
-    UPDATE \`watch-list\`
-    SET mid = JSON_ARRAY_APPEND(
-      COALESCE(mid, JSON_ARRAY()),
-      '$',
-      ${mid}
-    )
-    WHERE email = ${email} AND id=${id}
-    AND JSON_SEARCH(COALESCE(mid, JSON_ARRAY()), 'one', ${mid}) IS NULL
+  UPDATE \`watch-list\`
+SET mid = JSON_ARRAY_APPEND(
+    COALESCE(mid, JSON_ARRAY()),
+    '$',
+    ${mid}
+)
+WHERE email = ${email} AND id = ${id}
+  AND JSON_SEARCH(COALESCE(mid, JSON_ARRAY()), 'one', ${mid}) IS NULL;
     `.execute(db);
   return result;
 }
