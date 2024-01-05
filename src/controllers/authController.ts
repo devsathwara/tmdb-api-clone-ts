@@ -1,33 +1,12 @@
-import * as User from "../models/User";
+import { User } from "../models/index";
 import { NextFunction, Request, Response } from "express";
 import * as Z from "zod";
 import * as bcrypt from "bcrypt";
-import jwt, { JwtPayload } from "jsonwebtoken";
 import config from "../config/config";
-import nodemailer from "nodemailer";
-import crypto from "crypto";
 import { sendEmail, createJWTToken, validateJWTToken } from "../../utils/utils";
-import { jwtDecode } from "jwt-decode";
+import { StatusCodes } from "http-status-codes";
 import signInValidation from "../../validation/validation";
-
-// const registerSchema = {
-//   emailSchema: Z.string().email({ message: "Invalid Email" }),
-//   passwordSchema: Z.string().refine(
-//     (password) => {
-//       return (
-//         password.length >= 8 &&
-//         /[a-z]/.test(password) &&
-//         /[A-Z]/.test(password) &&
-//         /\d/.test(password) &&
-//         /[!@#$%^&*()_+{}\[\]:;<>,.?~\\/-]/.test(password)
-//       );
-//     },
-//     {
-//       message:
-//         "Invalid password. It should be at least 8 characters long and contain at least one lowercase letter, one uppercase letter, one digit, and one special character.",
-//     }
-//   ),
-// };
+import sendResponse from "../../utils/responseUtlis";
 export const registerUser = async (
   req: Request,
   res: Response
@@ -37,8 +16,8 @@ export const registerUser = async (
     let { username } = req.body;
     const userExist = await User.findUser(email);
     if (userExist) {
-      res.json({
-        message: "Your account is already there please Login",
+      sendResponse(res, StatusCodes.BAD_REQUEST, {
+        message: "Your account already exist please login",
       });
     }
     // hash the password before saving it to database
@@ -66,9 +45,9 @@ export const registerUser = async (
       );
 
       // console.log("Message sent: %s", info.messageId);
-      return res
-        .status(201)
-        .json({ message: `Message Sent to ${email} Please verify it` });
+      sendResponse(res, StatusCodes.ACCEPTED, {
+        message: `Message Sent to ${email} Please verify it`,
+      });
     } else {
       console.log("Error in creating new user");
       throw new Error("Error in creating new user");
@@ -80,7 +59,9 @@ export const registerUser = async (
     }
 
     console.error(error);
-    res.status(500).json({ error: "Internal Server Error" });
+    sendResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, {
+      error: "Internal Server Error",
+    });
   }
 };
 export const loginUser = async (req: Request, res: Response): Promise<any> => {
@@ -88,15 +69,20 @@ export const loginUser = async (req: Request, res: Response): Promise<any> => {
     let { email, password } = req.body;
     const user = await User.findUser(email);
     if (!user) {
-      return res
-        .status(401)
-        .send({ auth: false, token: null, message: "Email not found" });
+      sendResponse(res, StatusCodes.NON_AUTHORITATIVE_INFORMATION, {
+        auth: false,
+        token: null,
+        message: "Email not found please register",
+      });
     }
+
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) {
-      return res
-        .status(401)
-        .send({ auth: false, token: null, message: "Wrong Password" });
+      sendResponse(res, StatusCodes.NON_AUTHORITATIVE_INFORMATION, {
+        auth: false,
+        token: null,
+        message: "Wrong Password",
+      });
     }
     var token = createJWTToken(
       { email: user.email },
@@ -110,7 +96,7 @@ export const loginUser = async (req: Request, res: Response): Promise<any> => {
       httpOnly: true,
       expires: config.env.app.cookieExpiration,
     });
-    return res.status(200).send({
+    sendResponse(res, StatusCodes.ACCEPTED, {
       auth: true,
       username: user.username,
       message: "Authentication Successfull",
@@ -123,12 +109,7 @@ export const logoutUser = async (req: Request, res: Response): Promise<any> => {
   try {
     const token = res.clearCookie("token");
     const email = res.clearCookie("email");
-    if (!token) {
-      return res
-        .status(404)
-        .send({ auth: false, message: "No token provided" });
-    }
-    return res.status(200).json({
+    sendResponse(res, StatusCodes.ACCEPTED, {
       auth: false,
       token: null,
       email: null,
@@ -149,7 +130,9 @@ export const verifyEmail = async (
     const decoded: any = validateJWTToken(token);
     const user = await User.findUser(decoded.email);
     if (decoded.exp <= Date.now() / 1000) {
-      return res.status(401).json({ message: "Token has expired" });
+      sendResponse(res, StatusCodes.BAD_REQUEST, {
+        message: "Token has expired",
+      });
     }
     if (user.is_verified == 0) {
       await User.updateIsVerified(decoded.email, null);
@@ -161,23 +144,18 @@ export const verifyEmail = async (
           Welcome to TMDB(The Movie Database)`,
         ""
       );
-      return res.status(200).send({
+      sendResponse(res, StatusCodes.ACCEPTED, {
         message: "Your email is successfully verified you can login now",
       });
     } else {
-      return res
-        .status(200)
-        .json({ message: "Your email is already verified please login" });
+      sendResponse(res, StatusCodes.CONFLICT, {
+        message: "Your email is already verified please login",
+      });
     }
   } catch (error) {
     console.error(error);
   }
 };
-
-// In your userController.ts or a separate passwordController.ts file
-
-// ... (previous code)
-
 export const forgotPassword = async (
   req: Request,
   res: Response
@@ -186,18 +164,14 @@ export const forgotPassword = async (
     const { email } = req.body;
     const user = await User.findUser(email);
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      sendResponse(res, StatusCodes.NOT_FOUND, { message: "User not found" });
     }
     console.log(config.env.app.expiresIn);
     const resetToken = createJWTToken(
       { email: email },
       `${parseInt(config.env.app.expiresIn)}h`
     );
-    // Associate the reset token with the user in the database
-    // await User.updateResetToken(email, resetToken);
-
     const resetLink = `${config.env.app.appUrl}/user/reset-password/${resetToken}`;
-    // Send the reset link to the user's email
     const info = await sendEmail(
       config.env.app.email,
       email,
@@ -205,15 +179,16 @@ export const forgotPassword = async (
       `Hello👋, click the link below to reset your password: ${resetLink}`,
       `<a>${resetLink}</a>`
     );
-    return res
-      .status(200)
-      .json({ message: "Password reset link sent to your email" });
+    sendResponse(res, StatusCodes.ACCEPTED, {
+      message: "Password reset link sent to your email",
+    });
   } catch (error: any) {
     console.error(error);
-    return res.status(500).json({ error: "Internal Server Error" });
+    sendResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, {
+      error: "Internal Server Error",
+    });
   }
 };
-
 export const resetPassword = async (
   req: Request,
   res: Response
@@ -222,7 +197,9 @@ export const resetPassword = async (
   const { password } = req.body;
 
   if (!token) {
-    return res.status(404).json({ message: "Token not provided" });
+    sendResponse(res, StatusCodes.NOT_FOUND, {
+      message: "Token NOT FOUND",
+    });
   }
 
   try {
@@ -230,7 +207,9 @@ export const resetPassword = async (
 
     // Check if the token is expired
     if (decoded.exp <= Date.now() / 1000) {
-      return res.status(401).json({ message: "Token has expired" });
+      sendResponse(res, StatusCodes.BAD_REQUEST, {
+        message: "Token has expired",
+      });
     }
 
     // Continue with your password reset logic
@@ -239,10 +218,14 @@ export const resetPassword = async (
 
     // await User.updateResetToken(decoded.email, null);
 
-    return res.status(200).json({ message: "Password reset successful" });
+    sendResponse(res, StatusCodes.ACCEPTED, {
+      message: "Password reset successful",
+    });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ error: "Internal Server Error" });
+    sendResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, {
+      error: "Internal Server Error",
+    });
   }
 };
 export const changePassword = async (
@@ -255,21 +238,29 @@ export const changePassword = async (
     const user = await User.findUser(email);
 
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      sendResponse(res, StatusCodes.NOT_FOUND, {
+        message: "User Not Found",
+      });
     }
 
     const validPassword = await bcrypt.compare(currentPassword, user.password);
 
     if (!validPassword) {
-      return res.status(401).json({ message: "Current password is incorrect" });
+      sendResponse(res, StatusCodes.BAD_REQUEST, {
+        message: "Current Password is incorrect",
+      });
     }
 
     const hashedNewPassword = await bcrypt.hash(newPassword, 10);
     await User.updatePassword(email, hashedNewPassword);
 
-    return res.status(200).json({ message: "Password changed successfully" });
+    sendResponse(res, StatusCodes.ACCEPTED, {
+      message: "Password changed successfully",
+    });
   } catch (error: any) {
     console.error(error);
-    return res.status(500).json({ error: "Internal Server Error" });
+    sendResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, {
+      error: "Internal Server Error",
+    });
   }
 };

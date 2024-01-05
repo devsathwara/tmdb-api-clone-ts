@@ -1,6 +1,6 @@
 import express, { NextFunction, Request, Response, Router } from "express";
-import * as userController from "../controllers/userController";
-import { authCheck, checkVerifyEmail } from "../middleware/authMiddleware";
+import * as userController from "../controllers/authController";
+import { authCheck } from "../middleware/authMiddleware";
 
 const router: Router = express.Router();
 

@@ -1,7 +1,15 @@
 import express, { NextFunction, Request, Response } from "express";
 import { config } from "./src/config/config";
-import movieRoutes from "./src/routes/moviesRoutes";
-import userRoutes from "./src/routes/authroutes";
+import {
+  moviesRoutes,
+  authRoutes,
+  chartRoutes,
+  commentRoutes,
+  ratingsRoutes,
+  reactionRoutes,
+  favourtieRoutes,
+  watchListRoutes,
+} from "./src/routes/index";
 import cookieParser from "cookie-parser";
 const app = express();
 
@@ -12,8 +20,14 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   res.status(500).send("Something went wrong!");
 });
 
-app.use("/movies", movieRoutes);
-app.use("/user", userRoutes);
+app.use("/movies", moviesRoutes.default);
+app.use("/user", authRoutes.default);
+app.use("/chart", chartRoutes.default);
+app.use("/comment", commentRoutes.default);
+app.use("/reaction", reactionRoutes.default);
+app.use("/ratings", ratingsRoutes.default);
+app.use("/favourite", favourtieRoutes.default);
+app.use("/watchList", watchListRoutes.default);
 
 // app.get("/fetch-api-data", getAllMovies, (req: Request, res: Response) => {
 //   res.json({ message: "Inserted Successfully" });

@@ -1,14 +1,6 @@
-import { raw } from "mysql2";
 import { db } from "../db/database";
 import { MoviesInfo } from "../db/db";
-import {
-  RawBuilder,
-  sql,
-  Compilable,
-  QueryResult,
-  CompiledQuery,
-  createRawBuilder,
-} from "kysely";
+import { sql } from "kysely";
 export const createMovies = async (data: any[]): Promise<void> => {
   if (data.length == 0) {
     console.warn("No data provided for insertion.");
@@ -102,7 +94,6 @@ export const createMovies = async (data: any[]): Promise<void> => {
     throw error;
   }
 };
-
 export const getMovies = async (
   pageNumber: any,
   limit: any,
@@ -124,35 +115,51 @@ export const getMovies = async (
   voteCountTo: any,
   keywordId: any
 ): Promise<any> => {
-  console.log(typeof keywordId);
-  let offset: any = pageNumber == 1 ? 0 : (pageNumber - 1) * limit;
+  // let offset: any = pageNumber == 1 ? 0 : (pageNumber - 1) * limit;
+  name = name + "%";
   const movies = sql<any>`
   SELECT *
   FROM \`movies-info\`
   WHERE 
   (${
-    genres ? sql`JSON_CONTAINS(\`genre_ids\`, JSON_ARRAY(${genres}))` : sql`1`
+    genres.length > 0
+      ? sql`JSON_CONTAINS(\`genre_ids\`, JSON_ARRAY(${genres}))`
+      : sql`1`
   })
   AND (${
-    countries
+    countries.length > 0
       ? sql`JSON_CONTAINS(\`countries\`, JSON_ARRAY(${countries}))`
       : sql`1`
   })
   AND (${language ? sql`\`original_language\` = ${language}` : sql`1`})
-  AND (${name ? sql`\`title\` = ${name}` : sql`1`})
+  AND (${
+    name && typeof name === "string" && name.length > 0
+      ? sql`\`title\` LIKE ${name}`
+      : sql`1`
+  })
   AND (${adult ? sql`\`adult\` = ${adult}` : sql`1`})
   AND (${fromDate ? sql`\`release_date\` >= ${fromDate}` : sql`1`})
-  AND (${runtimeFrom ? sql`\`runtime\` >= ${runtimeFrom}` : sql`1`})
-  AND (${runtimeTo ? sql`\`runtime\` <= ${runtimeTo}` : sql`1`})
+  AND (${runtimeFrom ? sql`\`runtime\` >= ${parseInt(runtimeFrom)}` : sql`1`})
+  AND (${runtimeTo ? sql`\`runtime\` <= ${parseInt(runtimeTo)}` : sql`1`})
   AND (${
-    voteAverageFrom ? sql`\`vote_average\` >= ${voteAverageFrom}` : sql`1`
+    voteAverageFrom
+      ? sql`\`vote_average\` >= ${parseFloat(voteAverageFrom)}`
+      : sql`1`
   })
-  AND (${voteAverageTo ? sql`\`vote_average\` <= ${voteAverageTo}` : sql`1`})
-  AND (${voteCountFrom ? sql`\`vote_count\` >= ${voteCountFrom}` : sql`1`})
-  AND (${voteCountTo ? sql`\`vote_count\` <= ${voteCountTo}` : sql`1`})
+  AND (${
+    voteAverageTo
+      ? sql`\`vote_average\` <= ${parseFloat(voteAverageTo)}`
+      : sql`1`
+  })
+  AND (${
+    voteCountFrom ? sql`\`vote_count\` >= ${parseInt(voteCountFrom)}` : sql`1`
+  })
+  AND (${
+    voteCountTo ? sql`\`vote_count\` <= ${parseInt(voteCountTo)}` : sql`1`
+  })
   AND (${toDate ? sql`\`release_date\` <= ${toDate}` : sql`1`})
   AND (${
-    keywordId
+    keywordId.length > 0
       ? sql`${keywordId
           .map(
             (id: any) =>
@@ -161,7 +168,6 @@ export const getMovies = async (
           .reduce((prev: any, curr: any) => sql`${prev} OR ${curr}`)}`
       : sql`1`
   })
-  
   ORDER BY
   ${
     sort_popularity === "popu.desc"
@@ -178,8 +184,12 @@ export const getMovies = async (
       ? sql`\`vote_average\` DESC`
       : sql`id`
   }
-  LIMIT ${limit != null ? limit : 20}
-  OFFSET ${offset};`.execute(db);
+  LIMIT ${limit != null ? parseInt(limit) : 20}
+  OFFSET ${
+    pageNumber == 1
+      ? 0
+      : (pageNumber - 1) * (limit != null ? parseInt(limit) : 20)
+  };`.execute(db);
   return movies;
 };
 export const insertGenre = async (data: any[]): Promise<any> => {
@@ -201,64 +211,6 @@ export const insertGenre = async (data: any[]): Promise<any> => {
     throw error;
   }
 };
-export const insertList = async (data: any): Promise<any> => {
-  if (data.length == 0) {
-    console.warn("No data provided for insertion.");
-    return;
-  }
-  const result = await db
-    .insertInto("watch-list")
-    .values(data)
-    .ignore()
-    .execute();
-};
-export const accessListUserWise = async (email: any): Promise<any> => {
-  const list = await db
-    .selectFrom("watch-list")
-    .selectAll()
-    .where("email", "=", `${email}`)
-    .execute();
-  return list;
-};
-export async function insertFavourites(email: any, mid: number) {
-  const query = sql<any>`
-  UPDATE users
-  SET favourites = JSON_ARRAY_APPEND(
-    COALESCE(favourites, JSON_ARRAY()),
-    '$',
-    ${mid}
-  )
-  WHERE email = ${email}
-  AND JSON_SEARCH(COALESCE(favourites, JSON_ARRAY()), 'one', ${mid}) IS NULL
-`.execute(db);
-
-  return query;
-}
-export async function checkFavourites(email: any) {
-  const list = await db
-    .selectFrom("users")
-    .select("favourites")
-    .where("email", "=", `${email}`)
-    .execute();
-  return list;
-}
-export async function checkWatchList(email: any) {
-  const list = await db
-    .selectFrom("watch-list")
-    .select("mid")
-    .where("email", "=", `${email}`)
-    .execute();
-  return list;
-}
-export async function MoviesIdWatchList(email: any, id: any) {
-  const list = await db
-    .selectFrom("watch-list")
-    .select("mid")
-    .where("email", "=", `${email}`)
-    .where("id", "=", parseInt(`${id}`))
-    .executeTakeFirst();
-  return list;
-}
 export async function checkMid(movieID: any) {
   const list = await db
     .selectFrom("movies-info")
@@ -267,18 +219,7 @@ export async function checkMid(movieID: any) {
     .execute();
   return list;
 }
-export async function deleteFavourite(mid: any, email: any) {
-  const result = sql<any>`
-  UPDATE users
-  SET favourites = CASE
-    WHEN JSON_SEARCH(favourites, 'one', ${mid}) IS NOT NULL
-    THEN JSON_SET(COALESCE(favourites, '[]'), '$', JSON_REMOVE(favourites, JSON_UNQUOTE(JSON_SEARCH(favourites, 'one', ${mid}))))
-    ELSE COALESCE(favourites, '[]')
-  END
-  WHERE email = ${email}
-    `.execute(db);
-  return result;
-}
+
 export const countryRevenue = async (countries: any) => {
   const result = sql<any>`
     SELECT
@@ -290,18 +231,7 @@ export const countryRevenue = async (countries: any) => {
   `.execute(db);
   return result;
 };
-export const MoviesReleasedIn3Years = async () => {
-  const result = sql<any>`
-  SELECT YEAR(release_date) AS ReleaseYear, WEEKOFYEAR(release_date) AS Week, COUNT(*) AS NumberOfMovies FROM \`movies-info\` WHERE release_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 3 YEAR) AND CURDATE() GROUP BY YEAR(release_date), WEEKOFYEAR(release_date);
-  `.execute(db);
-  return result;
-};
-export const GenreMoviesReleasedIn3Years = async (genreId: any) => {
-  const result = sql<any>`
-  SELECT YEAR(mi.release_date) AS ReleaseYear, WEEKOFYEAR(mi.release_date) AS Week, mg.name AS GenreName, COUNT(*) AS NumberOfMovies FROM \`movies-info\` mi JOIN \`movies-genre\` mg ON FIND_IN_SET(mg.id, mi.genre_ids) WHERE mi.release_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 3 YEAR) AND CURDATE() AND mg.id = ${genreId} GROUP BY YEAR(mi.release_date), WEEKOFYEAR(mi.release_date);
-  `.execute(db);
-  return result;
-};
+
 export const getMoviesGrossIncome = async (mid: any) => {
   const result = sql<any>`  SELECT
   title,
@@ -323,145 +253,27 @@ export const getMoviesbyID = async (mid: any) => {
     .where("mid", "=", parseInt(`${mid}`))
     .executeTakeFirst();
   return list;
+  //   const result = sql<any>`SELECT
+  //   mi.*,
+  //   c.id AS comment_id,
+  //   c.user_email AS comment_user_email,
+  //   c.comment,
+  //   c.parent_id,
+  //   c.created_at AS comment_created_at,
+  //   c.updated_at AS comment_updated_at,
+  //   l.id AS like_id,
+  //   l.user_email AS like_user_email,
+  //   l.reaction,
+  //   l.created_at AS like_created_at,
+  //   l.updated_at AS like_updated_at
+  // FROM
+  //   \`movies-info\` mi
+  // LEFT JOIN
+  // movie_comments c ON mi.mid = c.movie_id
+  // LEFT JOIN
+  // movie_likes l ON mi.mid = l.mid
+  // WHERE
+  //   mi.mid = ${mid}; -- Replace :mid with the actual movie_id value
+  // `.execute(db);
+  //   return result;
 };
-export async function insertMoviesWatchlist(email: any, mid: any, id: any) {
-  console.log(`UPDATE \`watch-list\`
-  SET mid = JSON_ARRAY_APPEND(
-    COALESCE(mid, JSON_ARRAY()),
-    '$',
-    ${mid}
-  )
-  WHERE email = '${email}' AND id=${id}
-  AND JSON_SEARCH(COALESCE(mid, JSON_ARRAY()), 'one', ${mid}) IS NULL`);
-  const result = sql<any>`
-  UPDATE \`watch-list\`
-  SET mid = JSON_ARRAY_APPEND(
-    COALESCE(mid, JSON_ARRAY()),
-    '$',
-    ${mid}
-  )
-  WHERE email = ${email} AND id=${id}
-  AND JSON_SEARCH(COALESCE(mid, JSON_ARRAY()), 'one', ${mid}) IS NULL
-  `.execute(db);
-  return result;
-}
-export async function updateWatchlistName(email: any, id: any, name: any) {
-  const result = sql<any>`
-    UPDATE \`watch-list\`
-    SET name = ${name},updated_at=CURRENT_TIMESTAMP
-    WHERE id = ${id} AND email = ${email}
-  `.execute(db);
-  return result;
-}
-export async function deleteMoviesWatchList(mid: any, email: any, id: any) {
-  const result = sql<any>`  UPDATE \`watch-list\`
-  SET mid = CASE
-    WHEN JSON_SEARCH(mid, 'one', ${mid}) IS NOT NULL
-    THEN JSON_SET(COALESCE(mid, '[]'), '$', JSON_REMOVE(mid, JSON_UNQUOTE(JSON_SEARCH(mid, 'one', ${mid}))))
-    ELSE COALESCE(mid, '[]')
-  END
-  WHERE email = ${email} AND id=${id}`.execute(db);
-  return result;
-}
-
-export async function deleteWatchList(email: any, id: any) {
-  const result = db
-    .deleteFrom("watch-list")
-    .where("id", "=", id)
-    .where("email", "=", email)
-    .execute();
-  return result;
-}
-export async function shareWatchList(id: any) {
-  const result = await db
-    .selectFrom("watch-list")
-    .selectAll()
-    .where("id", "=", parseInt(id))
-    .executeTakeFirst();
-  if (result) {
-    const query = sql<any>`  UPDATE \`watch-list\`
-    SET is_shared=1,updated_at=CURRENT_TIMESTAMP
-    WHERE id=${id}`.execute(db);
-    return result;
-  }
-}
-export async function genreRatings(id: any) {
-  const result = sql<any>`SELECT
-  JSON_UNQUOTE(JSON_EXTRACT(mi.genre_ids, "$[0]")) as genre_id,
-  mg.name as genre_name,
-  SUM(mi.popularity) as popularity
-FROM \`movies-info\` mi
-JOIN \`movies-genre\` mg ON JSON_UNQUOTE(JSON_EXTRACT(mi.genre_ids, "$[0]")) = mg.id
-WHERE JSON_UNQUOTE(JSON_EXTRACT(mi.genre_ids, "$[0]")) IN (${id})
-GROUP BY genre_id, genre_name;`.execute(db);
-  return result;
-}
-export async function LikeDislikeMovies(data: any) {
-  if (!data) {
-    console.warn("No data provided for insertion.");
-    return;
-  }
-  try {
-    const checkLikeDislike = await db
-      .selectFrom("movie_likes")
-      .selectAll()
-      .where("mid", "=", data.mid)
-      .executeTakeFirst();
-    if (checkLikeDislike) {
-      const result = await db
-        .updateTable("movie_likes")
-        .set({
-          reaction: data.reaction,
-          updated_at: new Date(),
-        })
-        .where("mid", "=", data.mid)
-        .executeTakeFirst();
-      return result;
-    } else {
-      const result = await db.insertInto("movie_likes").values(data).execute();
-      return result;
-    }
-  } catch (error: any) {
-    console.error("SQL Error:", error.message);
-    throw error;
-  }
-}
-export async function RatingsMovies(data: any) {
-  if (!data) {
-    console.warn("No data provided for insertion.");
-    return;
-  }
-  try {
-    const checkRatings = await db
-      .selectFrom("movies_ratings")
-      .selectAll()
-      .where("mid", "=", data.mid)
-      .where("email", "=", data.email)
-      .executeTakeFirst();
-    if (checkRatings) {
-      const result = await db
-        .updateTable("movies_ratings")
-        .set({
-          rating: data.rating,
-          updated_at: new Date(),
-        })
-        .where("mid", "=", data.mid)
-        .where("types", "=", data.types)
-        .execute();
-      return result;
-    } else {
-      const result = await db
-        .insertInto("movies_ratings")
-        .values(data)
-        .execute();
-      return result;
-    }
-  } catch (error: any) {
-    console.error("SQL Error:", error.message);
-    throw error;
-  }
-}
-export async function CommentMovies(data: any) {
-  const result = await db.insertInto("movie_comments").values(data).execute();
-  return result;
-}
