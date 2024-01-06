@@ -13,7 +13,7 @@ export async function genreRatings(id: any) {
   return result;
 }
 
-export async function RatingsMovies(data: any) {
+export async function insert(data: any) {
   if (!data) {
     console.warn("No data provided for insertion.");
     return;

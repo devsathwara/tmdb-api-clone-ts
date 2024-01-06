@@ -1,10 +1,10 @@
 import axios, { AxiosResponse } from "axios";
-import { createMovies, insertGenre } from "./src/models/Movies";
+import { insert, insertGenre } from "./src/models/Movies";
 import config from "./src/config/config";
 const TMDB_API_KEY = config.env.app.tmdbApiKey;
 const ApiUrl = config.env.app.ApiUrl;
 let result: any[] = [];
-export async function getMovieDetails(movieId: number): Promise<any> {
+export async function getDetails(movieId: number): Promise<any> {
   try {
     const response: AxiosResponse = await axios.get(
       `${ApiUrl}/3/movie/${movieId}?api_key=${TMDB_API_KEY}&append_to_response=keywords,external_ids`
@@ -33,7 +33,7 @@ export async function getMovieDetails(movieId: number): Promise<any> {
     return null;
   }
 }
-async function getAllMovies(): Promise<void> {
+async function getMovies(): Promise<void> {
   try {
     let currentPage = 1;
 
@@ -49,7 +49,7 @@ async function getAllMovies(): Promise<void> {
         }
 
         const promiseMovie = pageMovies.map(async (movie: any) => {
-          const details = await getMovieDetails(movie.id);
+          const details = await getDetails(movie.id);
           // console.log(details?.countries);
           result.push({
             mid: movie.id,
@@ -78,7 +78,7 @@ async function getAllMovies(): Promise<void> {
           });
         });
         await Promise.allSettled(promiseMovie);
-        await createMovies(result); // Call createMovies function here
+        await insert(result); // Call createMovies function here
         result = [];
         console.log("Total Records:", currentPage * 20);
         currentPage++;
@@ -94,7 +94,7 @@ async function getAllMovies(): Promise<void> {
     console.error("An unexpected error occurred: ", error.message);
   }
 }
-async function getAllGenres(): Promise<void> {
+async function getGenres(): Promise<void> {
   try {
     const response: AxiosResponse = await axios.get(
       `https://api.themoviedb.org/3/genre/movie/list?language=en&api_key=${TMDB_API_KEY}`
@@ -105,5 +105,5 @@ async function getAllGenres(): Promise<void> {
     console.error(error);
   }
 }
-getAllMovies();
-getAllGenres();
+getMovies();
+getGenres();

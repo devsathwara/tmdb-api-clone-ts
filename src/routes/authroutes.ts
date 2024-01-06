@@ -4,9 +4,9 @@ import { authCheck } from "../middleware/authMiddleware";
 
 const router: Router = express.Router();
 
-router.post("/register", userController.registerUser);
-router.post("/login", userController.loginUser);
-router.get("/logout", userController.logoutUser);
+router.post("/register", userController.register);
+router.post("/login", userController.login);
+router.get("/logout", userController.logout);
 router.get("/verify-email/:token", userController.verifyEmail);
 router.get("/forgot-password", userController.forgotPassword);
 router.get("/reset-password/:token", userController.resetPassword);

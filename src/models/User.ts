@@ -1,5 +1,5 @@
 import { db } from "../db/database";
-export const registerUser = async (data: any[]): Promise<any> => {
+export const register = async (data: any[]): Promise<any> => {
   try {
     const user = await db.insertInto("users").values(data).execute();
     return user;

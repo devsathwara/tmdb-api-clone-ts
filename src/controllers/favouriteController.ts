@@ -12,7 +12,7 @@ export const insert = async (req: Request, res: Response) => {
         message: "Movie id is not there in database",
       });
     }
-    const result = await favourite.insertFavourites(userEmail, mid);
+    const result = await favourite.insert(userEmail, mid);
     if (result.numAffectedRows) {
       sendResponse(res, StatusCodes.ACCEPTED, {
         message: `${mid} added to your Favorites`,
@@ -30,11 +30,11 @@ export const insert = async (req: Request, res: Response) => {
   }
 };
 
-export const deleteFavourite = async (req: Request, res: Response) => {
+export const deleteFav= async (req: Request, res: Response) => {
   try {
     const userEmail = req.cookies.email;
     const { mid } = req.body;
-    const result: any = await favourite.deleteFavourites(mid, userEmail);
+    const result: any = await favourite.deleteFav(mid, userEmail);
     sendResponse(res, StatusCodes.ACCEPTED, {
       message: `${mid} deleted from favourites`,
     });
@@ -42,15 +42,15 @@ export const deleteFavourite = async (req: Request, res: Response) => {
     console.error(error);
   }
 };
-export const getMoviesFavourties = async (req: Request, res: Response) => {
+export const getFavourties = async (req: Request, res: Response) => {
   const { email } = req.cookies;
-  const favouritesId = await favourite.checkFavourites(email);
+  const favouritesId = await favourite.check(email);
   const moviesArr: any[] = [];
   await Promise.all(
     favouritesId.map(async (i: any) => {
       let arr = JSON.parse(i.favourites);
       const moviePromises = arr.map(async (i: any) => {
-        const movie = await movies.getMoviesbyID(i);
+        const movie = await movies.getMovie(i);
         return movie;
       });
       moviesArr.push(...(await Promise.all(moviePromises)));

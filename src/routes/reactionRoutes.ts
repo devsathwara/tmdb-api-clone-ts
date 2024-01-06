@@ -1,7 +1,6 @@
 import express, { NextFunction, Request, Response, Router } from "express";
 import { reaction } from "../controllers";
 import {
-  authenticationMiddleware,
   authCheck,
   checkVerifyEmail,
 } from "../middleware/authMiddleware";
@@ -10,12 +9,12 @@ router.get(
   "/getReaction/:mid",
   authCheck,
   checkVerifyEmail,
-  reaction.getLikeDislike
+  reaction.getReaction
 );
 router.post(
   "/movies-likeDislike/:mid",
   authCheck,
   checkVerifyEmail,
-  reaction.LikeDislikeMovies
+  reaction.insert
 );
 export default router;

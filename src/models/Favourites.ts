@@ -1,7 +1,7 @@
 import { db } from "../db/database";
 import { MoviesInfo } from "../db/db";
 import { sql } from "kysely";
-export async function insertFavourites(email: any, mid: number) {
+export async function insert(email: any, mid: number) {
   const query = sql<any>`
     UPDATE users
     SET favourites = JSON_ARRAY_APPEND(
@@ -15,7 +15,7 @@ export async function insertFavourites(email: any, mid: number) {
 
   return query;
 }
-export async function checkFavourites(email: any) {
+export async function check(email: any) {
   const list = await db
     .selectFrom("users")
     .select("favourites")
@@ -23,7 +23,7 @@ export async function checkFavourites(email: any) {
     .execute();
   return list;
 }
-export async function deleteFavourites(mid: any, email: any) {
+export async function deleteFav(mid: any, email: any) {
   const result = sql<any>`
     UPDATE users
     SET favourites = CASE

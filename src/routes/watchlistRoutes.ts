@@ -1,12 +1,11 @@
 import express, { NextFunction, Request, Response, Router } from "express";
 import { watchList } from "../controllers";
 import {
-  authenticationMiddleware,
   authCheck,
   checkVerifyEmail,
 } from "../middleware/authMiddleware";
 const router: Router = express.Router();
-router.get("/watch-list-share/:id", watchList.accessWatchListpublic);
+router.get("/share/:id", watchList.accessWatchListpublic);
 router.put(
   "/updateWatchListName/:id",
   authCheck,

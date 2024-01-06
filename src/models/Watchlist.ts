@@ -1,7 +1,7 @@
 import { db } from "../db/database";
 import { MoviesInfo } from "../db/db";
 import { sql } from "kysely";
-export async function insertMoviesWatchlist(email: any, mid: any, id: any) {
+export async function insert(email: any, mid: any, id: any) {
   const result = sql<any>`
   UPDATE \`watch-list\`
 SET mid = JSON_ARRAY_APPEND(
@@ -14,7 +14,7 @@ WHERE email = ${email} AND id = ${id}
     `.execute(db);
   return result;
 }
-export async function updateWatchlistName(email: any, id: any, name: any) {
+export async function update(email: any, id: any, name: any) {
   const result = sql<any>`
       UPDATE \`watch-list\`
       SET name = ${name},updated_at=CURRENT_TIMESTAMP
@@ -22,7 +22,7 @@ export async function updateWatchlistName(email: any, id: any, name: any) {
     `.execute(db);
   return result;
 }
-export async function deleteMoviesWatchList(mid: any, email: any, id: any) {
+export async function deleteMovies(mid: any, email: any, id: any) {
   const result = sql<any>`  UPDATE \`watch-list\`
     SET mid = CASE
       WHEN JSON_SEARCH(mid, 'one', ${mid}) IS NOT NULL
@@ -65,7 +65,7 @@ export const insertList = async (data: any): Promise<any> => {
     .ignore()
     .execute();
 };
-export const accessListUserWise = async (email: any): Promise<any> => {
+export const accessList = async (email: any): Promise<any> => {
   const list = await db
     .selectFrom("watch-list")
     .selectAll()
@@ -82,7 +82,7 @@ export async function checkWatchList(email: any) {
     .execute();
   return list;
 }
-export async function MoviesIdWatchList(email: any, id: any) {
+export async function getMid(email: any, id: any) {
   const list = await db
     .selectFrom("watch-list")
     .select("mid")

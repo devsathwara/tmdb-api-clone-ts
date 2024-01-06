@@ -1,12 +1,12 @@
 import { db } from "../db/database";
 import { MoviesInfo } from "../db/db";
 import { sql } from "kysely";
-async function CommentMovies(data: any) {
+async function insert(data: any) {
   const result = await db.insertInto("movie_comments").values(data).execute();
   return result;
 }
 
-async function getCommentsAndReplies(movieId: any) {
+async function getComments(movieId: any) {
   const comments = await db
     .selectFrom("movie_comments")
     .selectAll()
@@ -31,4 +31,4 @@ function buildCommentTree(comments: any, parent_id = null) {
   return result;
 }
 
-export { CommentMovies, getCommentsAndReplies };
+export { insert, getComments };

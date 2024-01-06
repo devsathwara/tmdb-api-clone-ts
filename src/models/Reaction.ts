@@ -1,7 +1,7 @@
 import { db } from "../db/database";
 import { MoviesInfo } from "../db/db";
 import { sql } from "kysely";
-export async function LikeDislikeMovies(data: any) {
+export async function insert(data: any) {
   if (!data) {
     console.warn("No data provided for insertion.");
     return;

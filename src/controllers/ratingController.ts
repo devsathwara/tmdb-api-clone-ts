@@ -17,7 +17,7 @@ export async function RatingsMovies(req: Request, res: Response) {
         created_at: new Date(),
         updated_at: new Date(),
       };
-      const result = await ratings.RatingsMovies(data);
+      const result = await ratings.insert(data);
     });
     sendResponse(res, StatusCodes.ACCEPTED, {
       message: `${mid} rated by ${email}`,

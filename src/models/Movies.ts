@@ -1,7 +1,7 @@
 import { db } from "../db/database";
 import { MoviesInfo } from "../db/db";
 import { sql } from "kysely";
-export const createMovies = async (data: any[]): Promise<void> => {
+export const insert = async (data: any[]): Promise<void> => {
   if (data.length == 0) {
     console.warn("No data provided for insertion.");
     return;
@@ -232,7 +232,7 @@ export const countryRevenue = async (countries: any) => {
   return result;
 };
 
-export const getMoviesGrossIncome = async (mid: any) => {
+export const getIncome = async (mid: any) => {
   const result = sql<any>`  SELECT
   title,
   budget,
@@ -246,34 +246,11 @@ FROM \`movies-info\`
 WHERE mid = ${mid}`.execute(db);
   return result;
 };
-export const getMoviesbyID = async (mid: any) => {
+export const getMovie = async (mid: any) => {
   const list = await db
     .selectFrom("movies-info")
     .selectAll()
     .where("mid", "=", parseInt(`${mid}`))
     .executeTakeFirst();
   return list;
-  //   const result = sql<any>`SELECT
-  //   mi.*,
-  //   c.id AS comment_id,
-  //   c.user_email AS comment_user_email,
-  //   c.comment,
-  //   c.parent_id,
-  //   c.created_at AS comment_created_at,
-  //   c.updated_at AS comment_updated_at,
-  //   l.id AS like_id,
-  //   l.user_email AS like_user_email,
-  //   l.reaction,
-  //   l.created_at AS like_created_at,
-  //   l.updated_at AS like_updated_at
-  // FROM
-  //   \`movies-info\` mi
-  // LEFT JOIN
-  // movie_comments c ON mi.mid = c.movie_id
-  // LEFT JOIN
-  // movie_likes l ON mi.mid = l.mid
-  // WHERE
-  //   mi.mid = ${mid}; -- Replace :mid with the actual movie_id value
-  // `.execute(db);
-  //   return result;
 };

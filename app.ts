@@ -29,11 +29,4 @@ app.use("/ratings", ratingsRoutes.default);
 app.use("/favourite", favourtieRoutes.default);
 app.use("/watchList", watchListRoutes.default);
 
-// app.get("/fetch-api-data", getAllMovies, (req: Request, res: Response) => {
-//   res.json({ message: "Inserted Successfully" });
-// });
-
-// app.get("/fetch-genres-movies", getAllGenres, (req: Request, res: Response) => {
-//   res.json({ message: "inserted genres" });
-// });
 export default app;

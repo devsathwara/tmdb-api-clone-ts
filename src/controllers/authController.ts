@@ -7,7 +7,7 @@ import { sendEmail, createJWTToken, validateJWTToken } from "../../utils/utils";
 import { StatusCodes } from "http-status-codes";
 import signInValidation from "../../validation/validation";
 import sendResponse from "../../utils/responseUtlis";
-export const registerUser = async (
+export const register = async (
   req: Request,
   res: Response
 ): Promise<any> => {
@@ -32,7 +32,7 @@ export const registerUser = async (
       password: password,
       is_verified: false,
     };
-    const user = await User.registerUser(data);
+    const user = await User.register(data);
     if (user) {
       //verify email
       const info = await sendEmail(
@@ -64,7 +64,7 @@ export const registerUser = async (
     });
   }
 };
-export const loginUser = async (req: Request, res: Response): Promise<any> => {
+export const login = async (req: Request, res: Response): Promise<any> => {
   try {
     let { email, password } = req.body;
     const user = await User.findUser(email);
@@ -105,7 +105,7 @@ export const loginUser = async (req: Request, res: Response): Promise<any> => {
     console.error(error);
   }
 };
-export const logoutUser = async (req: Request, res: Response): Promise<any> => {
+export const logout = async (req: Request, res: Response): Promise<any> => {
   try {
     const token = res.clearCookie("token");
     const email = res.clearCookie("email");

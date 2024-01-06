@@ -2,7 +2,7 @@ import express, { NextFunction, Request, Response, request } from "express";
 import * as Movies from "../models/Movies";
 import sendResponse from "../../utils/responseUtlis";
 import { StatusCodes } from "http-status-codes";
-export const displayMovies = async (
+export const display= async (
   req: Request,
   res: Response
 ): Promise<any> => {
@@ -107,7 +107,7 @@ export const getMoviesIncome = async (req: Request, res: Response) => {
       });
     }
     if (mid) {
-      const income = await Movies.getMoviesGrossIncome(mid);
+      const income = await Movies.getIncome(mid);
       sendResponse(res, StatusCodes.ACCEPTED, income);
     } else {
       sendResponse(res, StatusCodes.NOT_FOUND, {
@@ -120,7 +120,7 @@ export const getMoviesIncome = async (req: Request, res: Response) => {
 };
 export async function getMovie(req: Request, res: Response) {
   let { mid } = req.params;
-  const result = await Movies.getMoviesbyID(mid);
+  const result = await Movies.getMovie(mid);
   if (!result) {
     sendResponse(res, StatusCodes.NOT_FOUND, {
       message: `No movie found with the given ID : ${mid}`,
